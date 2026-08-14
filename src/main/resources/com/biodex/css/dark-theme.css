@@ -1,0 +1,79 @@
+/*
+ * Biodex dark theme.
+ *
+ * Every class name here also exists in light-theme.css. Style your page with these classes and it
+ * follows whichever theme is active - never hard code colours in an FXML file.
+ */
+
+.root {
+    -fx-background-color: #161a16;
+    -fx-text-fill: #e6ece6;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -fx-font-size: 13px;
+}
+
+.label {
+    -fx-text-fill: #e6ece6;
+}
+
+.app-title {
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #7fc98d;
+}
+
+/* Panel that groups related controls. */
+.card {
+    -fx-background-color: #212721;
+    -fx-background-radius: 8;
+    -fx-border-color: #333b33;
+    -fx-border-radius: 8;
+    -fx-padding: 20;
+}
+
+.button {
+    -fx-background-color: #3a8248;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 6;
+    -fx-padding: 8 18 8 18;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #4a9a59;
+}
+
+/* Destructive action, e.g. delete a sighting. */
+.danger-button {
+    -fx-background-color: #cc3a31;
+    -fx-text-fill: #ffffff;
+}
+
+.danger-button:hover {
+    -fx-background-color: #de4c43;
+}
+
+.text-field, .password-field, .text-area {
+    -fx-background-color: #2a312a;
+    -fx-text-fill: #e6ece6;
+    -fx-prompt-text-fill: #8a938a;
+    -fx-background-radius: 6;
+    -fx-border-color: #3d463d;
+    -fx-border-radius: 6;
+    -fx-padding: 7;
+}
+
+.text-field:focused, .password-field:focused, .text-area:focused {
+    -fx-border-color: #7fc98d;
+}
+
+/* Form-level message, e.g. "Those details did not match an account". */
+.error-label {
+    -fx-text-fill: #ff8a80;
+    -fx-font-size: 12px;
+}
+
+/* Put on a field whose value was rejected. */
+.field-error {
+    -fx-border-color: #ff8a80;
+}
