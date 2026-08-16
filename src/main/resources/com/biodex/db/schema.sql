@@ -65,3 +65,13 @@ AFTER INSERT ON users
 BEGIN
     INSERT INTO user_settings (user_id) VALUES (NEW.user_id);
 END;
+
+-- Raw JSON responses from the Atlas of Living Australia, keyed by the request that
+-- produced them. Lets the app show species data while offline. Written and read only
+-- by the API layer through ApiCacheDao; entries are disposable and may be deleted at
+-- any time.
+CREATE TABLE IF NOT EXISTS api_cache (
+    cache_key  VARCHAR(255) PRIMARY KEY,
+    payload    TEXT NOT NULL,
+    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
