@@ -1,2 +1,2 @@
 # CAB302-assignment
-lol
+ This is the repo for CAB302 Assignment - Biodex
