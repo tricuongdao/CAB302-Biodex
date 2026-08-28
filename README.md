@@ -1,4 +1,4 @@
-# Sign Up / Login Page — Specification
+# Sign Up / Login Page  Specification
 
 ## Document Control
 
