@@ -1,0 +1,34 @@
+site_name: Biodex Technical Specs
+site_url: https://tricuongdao.github.io/CAB302-assignment/
+repo_url: https://github.com/tricuongdao/CAB302-assignment
+repo_name: CAB302-assignment
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+    - scheme: slate
+      primary: teal
+      accent: teal
+
+nav:
+  - Home: index.md
+  - Login / Signup: login-signup-technical-spec.md
+  - Forgot Password: forgot-password-technical-spec.md
+  - 2FA: 2FA.md
+  - Heat Map: heat-map-technical-spec.md
+  - Pest Detail: pest-detail-technical-spec.md
+  - Settings: settings-page-technical-spec.md
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - tables
+  - admonition
+  - codehilite:
+      guess_lang: false
+
+plugins:
+  - search
