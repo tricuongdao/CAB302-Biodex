@@ -30,10 +30,13 @@ The main objective of this page is to track and catalogue invasive species and t
 
 ## User Stories
 
-* *As a user*, I want to see a visual representation of pest density in Brisbane, so I know which areas to avoid or monitor closely.
+* *As a user*, I want to see a visual representation of pest density in Brisbane, so that I can identify areas with high levels of pest activity.
 * *As a user*, I want to filter the map by specific invasive species, so I can track the spread of a particular threat like Fire Ants.
+* *As a user*, I want to filter sightings by date so that I can view pest activity within a relevant time period.
+* *As a user*, I want to select a sighting or hotspot so that I can view information about the invasive species reported there.
+* *As a user*, I want to search for a suburb or postcode, so that I can quickly view pest activity in a specific area.
 * *As a user*, I want to distinguish between official biosecurity data and unverified user reports, so I can trust the accuracy of the map.
-* *As a biosecurity officer (admin)*, I want to view clustered reports, so I can identify potential new outbreak zones efficiently.
+* *As a biosecurity officer*, I want to view clustered reports, so I can identify potential new outbreak zones efficiently.
 
 ## Technical Requirements
 
