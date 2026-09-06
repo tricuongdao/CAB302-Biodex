@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.TilePane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Pest details: filter chips and a grid of species cards. -->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.biodex.controller.pests.PestDetailsController"
+            prefWidth="1200" prefHeight="760">
+
+    <left>
+        <fx:include source="../common/SidebarView.fxml" fx:id="sidebar"/>
+    </left>
+
+    <center>
+        <VBox spacing="14">
+            <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
+
+            <!-- Top bar: title + search. -->
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <VBox spacing="2">
+                    <Label text="Pest details" styleClass="screen-title"/>
+                    <Label text="What's been seen in your area" styleClass="muted"/>
+                </VBox>
+                <Region HBox.hgrow="ALWAYS"/>
+                <TextField promptText="Search species or suburbs" prefWidth="240"/>
+            </HBox>
+
+            <!-- Filter chips. -->
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Button text="All" styleClass="chip chip-selected" mnemonicParsing="false"/>
+                <Button text="Amphibians" styleClass="chip" mnemonicParsing="false"/>
+                <Button text="Insects" styleClass="chip" mnemonicParsing="false"/>
+                <Button text="Flora" styleClass="chip" mnemonicParsing="false"/>
+                <Button text="High danger only" styleClass="chip" mnemonicParsing="false"/>
+            </HBox>
+
+            <!-- Card grid. -->
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+                <VBox spacing="14">
+                    <TilePane hgap="14" vgap="14" prefColumns="3">
+                        <VBox styleClass="card clickable" prefWidth="300" spacing="8"
+                              onMouseClicked="#onOpenCaneToad">
+                            <Region prefHeight="90" styleClass="pest-photo"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Cane toad" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                                <Label text="High" styleClass="threat-chip threat-high"/>
+                            </HBox>
+                            <Label text="82 records this month" styleClass="muted"/>
+                        </VBox>
+
+                        <VBox styleClass="card clickable" prefWidth="300" spacing="8"
+                              onMouseClicked="#onOpenCaneToad">
+                            <Region prefHeight="90" styleClass="pest-photo"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Red imported fire ant" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                                <Label text="High" styleClass="threat-chip threat-high"/>
+                            </HBox>
+                            <Label text="34 records this month" styleClass="muted"/>
+                        </VBox>
+
+                        <VBox styleClass="card clickable" prefWidth="300" spacing="8"
+                              onMouseClicked="#onOpenCaneToad">
+                            <Region prefHeight="90" styleClass="pest-photo"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Leeaona" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                                <Label text="Medium" styleClass="threat-chip threat-medium"/>
+                            </HBox>
+                            <Label text="84 records this month" styleClass="muted"/>
+                        </VBox>
+
+                        <VBox styleClass="card clickable" prefWidth="300" spacing="8"
+                              onMouseClicked="#onOpenCaneToad">
+                            <Region prefHeight="90" styleClass="pest-photo"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Indian myna" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                                <Label text="Medium" styleClass="threat-chip threat-medium"/>
+                            </HBox>
+                            <Label text="82 records this month" styleClass="muted"/>
+                        </VBox>
+
+                        <VBox styleClass="card clickable" prefWidth="300" spacing="8"
+                              onMouseClicked="#onOpenCaneToad">
+                            <Region prefHeight="90" styleClass="pest-photo"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Carp's class creeper" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                                <Label text="Medium" styleClass="threat-chip threat-medium"/>
+                            </HBox>
+                            <Label text="45 records this month" styleClass="muted"/>
+                        </VBox>
+
+                        <VBox styleClass="card clickable" prefWidth="300" spacing="8"
+                              onMouseClicked="#onOpenCaneToad">
+                            <Region prefHeight="90" styleClass="pest-photo"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="European rabbit" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                                <Label text="Low" styleClass="threat-chip threat-low"/>
+                            </HBox>
+                            <Label text="12 records this month" styleClass="muted"/>
+                        </VBox>
+                    </TilePane>
+
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Showing 9 of 214" styleClass="muted"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Hyperlink text="Load more" styleClass="text-link"/>
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </VBox>
+    </center>
+</BorderPane>
+

@@ -14,8 +14,14 @@ package com.biodex.routing;
  */
 public enum Route {
 
-    /** Landing screen shown at startup. */
-    HOME("/com/biodex/fxml/home/HomeView.fxml", "Biodex");
+    LOGIN("/com/biodex/fxml/auth/LoginView.fxml", "Biodex - Sign in"),
+    SIGNUP("/com/biodex/fxml/auth/SignupView.fxml", "Biodex - Create account"),
+    FORGOT_PASSWORD("/com/biodex/fxml/auth/ForgotPasswordView.fxml", "Biodex - Account recovery"),
+    HEAT_MAP("/com/biodex/fxml/heatmap/HeatMapView.fxml", "Biodex - Heat map"),
+    IDENTIFY_PEST("/com/biodex/fxml/identify/IdentifyPestView.fxml", "Biodex - Identify a pest"),
+    PEST_DETAILS("/com/biodex/fxml/pests/PestDetailsView.fxml", "Biodex - Pest details"),
+    PEST_DETAIL("/com/biodex/fxml/pests/PestDetailView.fxml", "Biodex - Cane toad"),
+    PROFILE("/com/biodex/fxml/profile/ProfileView.fxml", "Biodex - Profile & settings");
 
     private final String fxmlPath;
     private final String title;

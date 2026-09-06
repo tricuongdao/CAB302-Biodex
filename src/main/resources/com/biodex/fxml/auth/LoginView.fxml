@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Sign in: dark green brand panel on the left, form on the cream page. -->
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.biodex.controller.auth.LoginController"
+      styleClass="auth-screen" prefWidth="1200" prefHeight="760">
+
+    <!-- Brand panel with the product pitch and a few headline stats. -->
+    <VBox styleClass="brand-panel" prefWidth="380" minWidth="380" spacing="10">
+        <padding><Insets top="32" right="32" bottom="32" left="32"/></padding>
+        <Label text="BIODEX" styleClass="logo"/>
+        <Region prefHeight="30"/>
+        <Label text="Log an invasive species sighting in the field, and see what everyone else has found nearby."
+               styleClass="brand-tagline" wrapText="true"/>
+        <Region prefHeight="26"/>
+        <Label text="1,224" styleClass="brand-stat-number"/>
+        <Label text="sightings logged, some as recent as an hour ago" styleClass="brand-tagline" wrapText="true"/>
+        <Region prefHeight="14"/>
+        <Label text="62" styleClass="brand-stat-number"/>
+        <Label text="species in the reference library" styleClass="brand-tagline" wrapText="true"/>
+        <Region prefHeight="14"/>
+        <Label text="South East QLD" styleClass="brand-stat-number"/>
+        <Label text="the region the library covers" styleClass="brand-tagline" wrapText="true"/>
+    </VBox>
+
+    <!-- Sign-in form. -->
+    <StackPane HBox.hgrow="ALWAYS">
+        <VBox maxWidth="380" spacing="12">
+            <padding><Insets top="12" right="32" bottom="32" left="32"/></padding>
+
+            <fx:include source="../common/ThemeSwitchView.fxml"/>
+
+            <Region prefHeight="40"/>
+            <Label text="Sign in" styleClass="page-title"/>
+            <Label text="Use your email account." styleClass="muted"/>
+            <Region prefHeight="8"/>
+
+            <Label text="EMAIL" styleClass="field-label"/>
+            <TextField promptText="you@example.com"/>
+            <Label text="PASSWORD" styleClass="field-label"/>
+            <PasswordField promptText="********"/>
+
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <CheckBox text="Keep me signed in"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Hyperlink text="Forgot password?" styleClass="text-link" onAction="#onForgotPassword"/>
+            </HBox>
+
+            <Button text="Sign in" maxWidth="Infinity" onAction="#onSignIn"/>
+
+            <HBox alignment="CENTER" spacing="10">
+                <Region prefWidth="80" styleClass="divider"/>
+                <Label text="or" styleClass="muted"/>
+                <Region prefWidth="80" styleClass="divider"/>
+            </HBox>
+
+            <Button text="Create an account" styleClass="outline-button" maxWidth="Infinity"
+                    mnemonicParsing="false" onAction="#onCreateAccount"/>
+        </VBox>
+    </StackPane>
+</HBox>
