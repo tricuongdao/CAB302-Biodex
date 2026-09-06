@@ -2,8 +2,11 @@
 target/
 
 ### Biodex local database ###
-biodex.db
+*.db
 *.db-journal
+
+### Logs ###
+*.log
 
 ### IntelliJ IDEA ###
 out/
