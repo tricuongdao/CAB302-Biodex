@@ -2,11 +2,15 @@
 # ============================================================
 #  Biodex - launcher (macOS / Linux)
 #  Requirements: JDK 17 or newer only.
-#  Maven is NOT required: the bundled Maven Wrapper (mvnw)
-#  automatically downloads the right Maven version on first run.
+#  Maven is NOT required: the bundled Maven Wrapper
+#  (loader/mvnw) downloads it automatically on first run.
+#  Usage: from anywhere -  loader/run.sh
 # ============================================================
 set -u
-cd "$(dirname "$0")" || exit 1
+LOADER_DIR="$(cd "$(dirname "$0")" && pwd)" || exit 1
+
+# --- Run Maven from the project root so the app database (biodex.db) stays there ---
+cd "$LOADER_DIR/.." || exit 1
 
 # --- Check Java, the only real prerequisite ---
 if ! command -v java >/dev/null 2>&1 && [ ! -x "${JAVA_HOME:-}/bin/java" ]; then
@@ -18,16 +22,13 @@ if ! command -v java >/dev/null 2>&1 && [ ! -x "${JAVA_HOME:-}/bin/java" ]; then
     exit 1
 fi
 
-# --- Locate Maven: prefer the project wrapper, then PATH ---
-if [ -x ./mvnw ]; then
-    MVN_CMD=./mvnw
-elif [ -f ./mvnw ]; then
-    chmod +x ./mvnw
-    MVN_CMD=./mvnw
+# --- Locate Maven: prefer the bundled wrapper, then PATH ---
+if [ -x "$LOADER_DIR/mvnw" ]; then
+    MVN_CMD="$LOADER_DIR/mvnw"
 elif command -v mvn >/dev/null 2>&1; then
     MVN_CMD=mvn
 else
-    echo "[ERROR] Maven not found and mvnw wrapper is missing."
+    echo "[ERROR] Maven not found and loader/mvnw wrapper is missing."
     echo "        Please re-clone the repository or install Maven 3.8+."
     exit 1
 fi
