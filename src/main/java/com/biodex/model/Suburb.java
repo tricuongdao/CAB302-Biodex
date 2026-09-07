@@ -58,4 +58,9 @@ public class Suburb {
     public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
+
+    @Override
+    public String toString() {
+        return name + (postcode == null || postcode.isBlank() ? "" : ", " + postcode);
+    }
 }

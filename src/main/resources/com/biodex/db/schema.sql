@@ -12,8 +12,24 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_settings (
     user_id            INTEGER PRIMARY KEY,
     theme              TEXT    NOT NULL DEFAULT 'light',
+    language           TEXT    NOT NULL DEFAULT 'en-AU',
+    measurement_unit   TEXT    NOT NULL DEFAULT 'METRIC',
+    default_suburb_id  INTEGER,
+    auto_identify_on_upload             INTEGER NOT NULL DEFAULT 1,
+    identification_confidence_threshold REAL    NOT NULL DEFAULT 0.70,
+    wifi_only_upload                    INTEGER NOT NULL DEFAULT 0,
+    auto_compress_photos                INTEGER NOT NULL DEFAULT 1,
+    max_upload_resolution               TEXT    NOT NULL DEFAULT '1920x1080',
+    notify_new_sightings_nearby         INTEGER NOT NULL DEFAULT 1,
+    notify_community_alerts             INTEGER NOT NULL DEFAULT 1,
+    notify_app_updates                  INTEGER NOT NULL DEFAULT 0,
+    share_location_publicly             INTEGER NOT NULL DEFAULT 0,
+    anonymize_uploads                   INTEGER NOT NULL DEFAULT 0,
+    text_size                           TEXT    NOT NULL DEFAULT 'MEDIUM',
     two_factor_enabled INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+    updated_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (default_suburb_id) REFERENCES suburbs (suburb_id)
 );
 
 CREATE TABLE IF NOT EXISTS suburbs (
