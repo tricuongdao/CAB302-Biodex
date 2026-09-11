@@ -190,6 +190,18 @@
 .blob-high { -fx-fill: rgba(200, 90, 55, 0.55); }
 .blob-mid { -fx-fill: rgba(196, 150, 70, 0.45); }
 .blob-low { -fx-fill: rgba(120, 140, 95, 0.35); }
+.heat-marker-circle { -fx-stroke: rgba(255, 255, 255, 0.72); -fx-stroke-width: 2; }
+.hotspot-marker { -fx-cursor: hand; }
+.hotspot-marker:hover { -fx-opacity: 0.82; }
+.hotspot-count { -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-font-weight: bold; }
+.map-empty-state {
+    -fx-background-color: rgba(32, 36, 29, 0.92);
+    -fx-background-radius: 10;
+    -fx-padding: 14;
+    -fx-text-fill: #c8cfba;
+    -fx-alignment: center;
+}
+.map-legend { -fx-opacity: 0.94; }
 .density-bar {
     -fx-background-color: linear-gradient(to right, #3c4a30, #b3913f, #c85a37);
     -fx-background-radius: 999;
