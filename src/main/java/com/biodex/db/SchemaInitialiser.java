@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,9 +36,54 @@ public final class SchemaInitialiser {
             for (String sql : readStatements()) {
                 statement.execute(sql);
             }
+            ensureUserSettingsColumns(connection);
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to apply the Biodex database schema", e);
         }
+    }
+
+    private static void ensureUserSettingsColumns(Connection connection) throws SQLException {
+        List<ColumnMigration> migrations = List.of(
+                new ColumnMigration("language", "TEXT NOT NULL DEFAULT 'en-AU'"),
+                new ColumnMigration("measurement_unit", "TEXT NOT NULL DEFAULT 'METRIC'"),
+                new ColumnMigration("default_suburb_id", "INTEGER"),
+                new ColumnMigration("auto_identify_on_upload", "INTEGER NOT NULL DEFAULT 1"),
+                new ColumnMigration("identification_confidence_threshold", "REAL NOT NULL DEFAULT 0.70"),
+                new ColumnMigration("wifi_only_upload", "INTEGER NOT NULL DEFAULT 0"),
+                new ColumnMigration("auto_compress_photos", "INTEGER NOT NULL DEFAULT 1"),
+                new ColumnMigration("max_upload_resolution", "TEXT NOT NULL DEFAULT '1920x1080'"),
+                new ColumnMigration("notify_new_sightings_nearby", "INTEGER NOT NULL DEFAULT 1"),
+                new ColumnMigration("notify_community_alerts", "INTEGER NOT NULL DEFAULT 1"),
+                new ColumnMigration("notify_app_updates", "INTEGER NOT NULL DEFAULT 0"),
+                new ColumnMigration("share_location_publicly", "INTEGER NOT NULL DEFAULT 0"),
+                new ColumnMigration("anonymize_uploads", "INTEGER NOT NULL DEFAULT 0"),
+                new ColumnMigration("text_size", "TEXT NOT NULL DEFAULT 'MEDIUM'"),
+                new ColumnMigration("updated_at", "TEXT NOT NULL DEFAULT ''"));
+
+        for (ColumnMigration migration : migrations) {
+            if (!hasColumn(connection, "user_settings", migration.name())) {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("ALTER TABLE user_settings ADD COLUMN "
+                            + migration.name() + " " + migration.definition());
+                }
+            }
+        }
+    }
+
+    private static boolean hasColumn(Connection connection, String table, String column)
+            throws SQLException {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (resultSet.next()) {
+                if (column.equalsIgnoreCase(resultSet.getString("name"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private record ColumnMigration(String name, String definition) {
     }
 
     /**
