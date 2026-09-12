@@ -16,7 +16,7 @@ public class Main extends Application {
 
         SceneRouter router = SceneRouter.getInstance();
         router.init(stage);
-        router.go(Route.HOME);
+        router.go(Route.LOGIN);
         stage.show();
     }
 

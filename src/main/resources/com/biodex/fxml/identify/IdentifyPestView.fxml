@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Identify a pest: photo drop zone on the left, matches and sighting form on the right. -->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.biodex.controller.identify.IdentifyPestController"
+            prefWidth="1200" prefHeight="760">
+
+    <left>
+        <fx:include source="../common/SidebarView.fxml" fx:id="sidebar"/>
+    </left>
+
+    <center>
+        <VBox spacing="14">
+            <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
+
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <VBox spacing="2">
+                    <Label text="Identify a pest" styleClass="screen-title"/>
+                    <Label text="Step 1 of 3 - add photos of what you found" styleClass="muted"/>
+                </VBox>
+                <Region HBox.hgrow="ALWAYS"/>
+                <fx:include source="../common/ThemeSwitchView.fxml"/>
+            </HBox>
+
+            <HBox spacing="16" VBox.vgrow="ALWAYS">
+                <!-- Photo drop zone. -->
+                <VBox HBox.hgrow="ALWAYS" spacing="12">
+                    <VBox styleClass="drop-zone" alignment="CENTER" spacing="8" VBox.vgrow="ALWAYS">
+                        <Label text="?" styleClass="muted"/>
+                        <Label text="Drop photos here" styleClass="section-title"/>
+                        <Label text="Up to 5 photos, 10 MB each. Clear, side-on shots identify fastest."
+                               styleClass="muted" wrapText="true" textAlignment="CENTER" maxWidth="280"/>
+                        <Region prefHeight="6"/>
+                        <HBox spacing="10">
+                            <Button text="Browse files" onAction="#onBrowseFiles" mnemonicParsing="false"/>
+                            <Button text="Use camera" styleClass="outline-button" mnemonicParsing="false"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- Matches + sighting details. -->
+                <VBox prefWidth="360" minWidth="360" spacing="12">
+                    <VBox styleClass="card" spacing="10">
+                        <Label text="Possible matches" styleClass="section-title"/>
+
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <VBox spacing="1" HBox.hgrow="ALWAYS">
+                                <Label text="Cane toad" styleClass="section-title"/>
+                                <Label text="Rhinella marina" styleClass="muted sci-name"/>
+                            </VBox>
+                            <Label text="92%" styleClass="muted"/>
+                            <Button text="Selected" styleClass="chip chip-selected" mnemonicParsing="false"/>
+                        </HBox>
+                        <Region styleClass="divider"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <VBox spacing="1" HBox.hgrow="ALWAYS">
+                                <Label text="Eastern dwarf tree frog" styleClass="section-title"/>
+                                <Label text="Litoria fallax" styleClass="muted sci-name"/>
+                            </VBox>
+                            <Label text="77%" styleClass="muted"/>
+                            <Button text="Select" styleClass="chip" mnemonicParsing="false"/>
+                        </HBox>
+                        <Region styleClass="divider"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <VBox spacing="1" HBox.hgrow="ALWAYS">
+                                <Label text="Green tree frog" styleClass="section-title"/>
+                                <Label text="Litoria caerulea" styleClass="muted sci-name"/>
+                            </VBox>
+                            <Label text="12%" styleClass="muted"/>
+                            <Button text="Select" styleClass="chip" mnemonicParsing="false"/>
+                        </HBox>
+                    </VBox>
+
+
+                    <VBox styleClass="card" spacing="10">
+                        <Label text="Where &amp; when" styleClass="section-title"/>
+                        <GridPane hgap="12" vgap="6">
+                            <Label text="WHERE" styleClass="field-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <TextField promptText="Kedron Brook, Gordon Park" maxWidth="Infinity"
+                                       GridPane.rowIndex="1" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+                            <Label text="WHEN" styleClass="field-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <Label text="COUNT" styleClass="field-label" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                            <TextField promptText="27 Aug 2026, 16:40" maxWidth="Infinity"
+                                       GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                            <TextField promptText="3 adults" maxWidth="Infinity"
+                                       GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                            <Label text="NOTES" styleClass="field-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                            <TextArea promptText="Hear the calling after rain..." prefRowCount="3" maxWidth="Infinity"
+                                      GridPane.rowIndex="5" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+                        </GridPane>
+                    </VBox>
+                </VBox>
+            </HBox>
+
+            <!-- Footer actions. -->
+            <HBox alignment="CENTER_RIGHT" spacing="10">
+                <Button text="Back" styleClass="outline-button" onAction="#onBackToHeatMap" mnemonicParsing="false"/>
+                <Button text="Submit report" onAction="#onSubmitReport" mnemonicParsing="false"/>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>

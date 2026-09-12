@@ -18,8 +18,8 @@ import java.net.URL;
  */
 public final class SceneRouter {
 
-    private static final int DEFAULT_WIDTH = 900;
-    private static final int DEFAULT_HEIGHT = 600;
+    private static final int DEFAULT_WIDTH = 1200;
+    private static final int DEFAULT_HEIGHT = 760;
 
     private static SceneRouter instance;
 
