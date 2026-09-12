@@ -5,6 +5,9 @@ target/
 *.db
 *.db-journal
 
+### Local Python conversion venv (Teachable Machine -> ONNX) ###
+.venv-convert/
+
 ### Logs ###
 *.log
 
