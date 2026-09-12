@@ -192,6 +192,18 @@
 .blob-high { -fx-fill: rgba(168, 67, 46, 0.50); }
 .blob-mid { -fx-fill: rgba(176, 140, 60, 0.40); }
 .blob-low { -fx-fill: rgba(110, 130, 85, 0.30); }
+.heat-marker-circle { -fx-stroke: rgba(255, 255, 255, 0.80); -fx-stroke-width: 2; }
+.hotspot-marker { -fx-cursor: hand; }
+.hotspot-marker:hover { -fx-opacity: 0.82; }
+.hotspot-count { -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-font-weight: bold; }
+.map-empty-state {
+    -fx-background-color: rgba(251, 247, 236, 0.92);
+    -fx-background-radius: 10;
+    -fx-padding: 14;
+    -fx-text-fill: #5c624f;
+    -fx-alignment: center;
+}
+.map-legend { -fx-opacity: 0.94; }
 .density-bar {
     -fx-background-color: linear-gradient(to right, #dfe7d2, #e8c66a, #b0532f);
     -fx-background-radius: 999;
