@@ -20,7 +20,7 @@ public enum Route {
     HEAT_MAP("/com/biodex/fxml/heatmap/HeatMapView.fxml", "Biodex - Heat map"),
     IDENTIFY_PEST("/com/biodex/fxml/identify/IdentifyPestView.fxml", "Biodex - Identify a pest"),
     PEST_DETAILS("/com/biodex/fxml/pests/PestDetailsView.fxml", "Biodex - Pest details"),
-    PEST_DETAIL("/com/biodex/fxml/pests/PestDetailView.fxml", "Biodex - Cane toad"),
+    PEST_DETAIL("/com/biodex/fxml/pests/PestDetailView.fxml", "Biodex - Species detail"),
     PROFILE("/com/biodex/fxml/profile/ProfileView.fxml", "Biodex - Profile & settings");
 
     private final String fxmlPath;

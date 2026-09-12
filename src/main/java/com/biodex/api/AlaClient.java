@@ -29,10 +29,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Speaks HTTP to the Atlas of Living Australia and maps the replies onto Biodex DTOs.
+ * Speaks HTTP to the Atlas of Living Australia and maps the replies onto Biodex DTOs. Species
+ * photos come from the Atlas too: the profile payload's own images first, then any photo attached
+ * to one of the taxon's occurrence records. Only description text the Atlas does not hold at all
+ * is filled from the species' Wikipedia summary — the same source the Atlas's own species pages
+ * fall back to.
  *
- * <p>This is the only class that performs requests or reads JSON from the Atlas. Nothing above it
- * knows that an HTTP call is involved — controllers must go through
+ * <p>This is the only class that performs requests or reads JSON from either service. Nothing above
+ * it knows that an HTTP call is involved — controllers must go through
  * {@link ServiceFactory#speciesService()} and must never touch this class directly.
  *
  * <p>Every method blocks and throws {@link ApiException} on any failure. Callers are expected to be
@@ -94,13 +98,135 @@ public class AlaClient {
         JsonObject root = getJson(path, Map.of());
 
         JsonObject taxonConcept = object(root, "taxonConcept");
+        String scientificName = string(taxonConcept, "nameString", "nameComplete", "scientificName");
+        String commonName = firstCommonName(root);
+        String description = description(root);
+        String image = imageUrl(root, taxonConcept);
+
+        // The profile payload itself is often bare: most taxa carry neither a description nor an
+        // inlined image. A missing photo falls back to ALA's occurrence records — a taxon with
+        // even one photo-backed sighting (iNaturalist, museums, citizen science) gets an
+        // Atlas-hosted image. Description text the Atlas genuinely does not hold is filled from
+        // the species' Wikipedia summary, and a missing value stays null rather than becoming an
+        // error, exactly like every other field here.
+        if (image == null) {
+            image = biocacheImage(scientificName, commonName);
+        }
+        if (description == null) {
+            description = wikipediaDescription(scientificName, commonName);
+        }
+
         return new SpeciesProfile(
                 firstNonNull(string(taxonConcept, "guid"), guid),
-                string(taxonConcept, "nameString", "nameComplete", "scientificName"),
-                firstCommonName(root),
-                description(root),
-                imageUrl(root, taxonConcept),
+                scientificName,
+                commonName,
+                description,
+                image,
                 looksInvasive(root));
+    }
+
+    /**
+     * Description text from the species' Wikipedia page, used when the Atlas carries none. The
+     * scientific name is tried first as the most precise, then the common name.
+     */
+    private String wikipediaDescription(String scientificName, String commonName) {
+        for (String name : nameCandidates(scientificName, commonName)) {
+            String title = wikipediaTitle(name);
+            if (title == null) {
+                continue;
+            }
+            try {
+                String text = descriptionFromSummary(
+                        getJson(AlaEndpoints.WIKIPEDIA_SUMMARY_BASE + title, Map.of()));
+                if (text != null) {
+                    return text + "\n\nSource: Wikipedia";
+                }
+            } catch (ApiException e) {
+                // No usable page under this name; the next candidate or plain null is fine.
+            }
+        }
+        return null;
+    }
+
+    /**
+     * A photo of the taxon from ALA's occurrence records, used when the profile payload has none.
+     * Records contributed by iNaturalist, museums and citizen-science programs are hosted by the
+     * Atlas's image service, so the photo is an ALA URL — and any taxon with even one imaged
+     * sighting is covered. The scientific name is tried first, then the common name, so a species
+     * whose scientific name finds no records still gets its picture.
+     */
+    private String biocacheImage(String scientificName, String commonName) {
+        for (String name : nameCandidates(scientificName, commonName)) {
+            String image = imagedRecordUrl(name);
+            if (image != null) {
+                return image;
+            }
+        }
+        return null;
+    }
+
+    /** The first imaged occurrence record's photo URL for a name, or null when there is none. */
+    private String imagedRecordUrl(String name) {
+        try {
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("q", taxonQuery(name));
+            params.put("fq", "imageID:[* TO *]");
+            params.put("pageSize", "1");
+            JsonObject root = getJson(
+                    AlaEndpoints.BIOCACHE_BASE + AlaEndpoints.OCCURRENCE_SEARCH_PATH, params);
+            for (JsonElement element : array(root, "occurrences")) {
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                String image = imageUrlFromRecord(element.getAsJsonObject());
+                if (image != null) {
+                    return image;
+                }
+            }
+        } catch (ApiException e) {
+            // A taxon with no imaged records, or a biocache outage, is not an error worth raising.
+        }
+        return null;
+    }
+
+    /** The names to try against Wikipedia, most precise first; the Atlas omits either freely. */
+    private static List<String> nameCandidates(String scientificName, String commonName) {
+        List<String> candidates = new ArrayList<>(2);
+        if (scientificName != null && !scientificName.isBlank()) {
+            candidates.add(scientificName);
+        }
+        if (commonName != null && !commonName.isBlank()) {
+            candidates.add(commonName);
+        }
+        return List.copyOf(candidates);
+    }
+
+    /** Turns a species name into a Wikipedia page-title path segment, or null when unusable. */
+    static String wikipediaTitle(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        // URLEncoder is form encoding, so any residual '+' has no place in a path segment.
+        return URLEncoder.encode(name.trim().replaceAll("\\s+", "_"), StandardCharsets.UTF_8)
+                .replace("+", "%20");
+    }
+
+    /** The plain-text lead of a Wikipedia summary, or null when the page is not usable. */
+    static String descriptionFromSummary(JsonObject summary) {
+        if (summary == null) {
+            return null;
+        }
+        String type = string(summary, "type");
+        if (type != null && "disambiguation".equalsIgnoreCase(type)) {
+            return null;
+        }
+        String extract = string(summary, "extract");
+        return extract != null && !extract.isBlank() ? extract : null;
+    }
+
+    /** The largest photo of an occurrence record, as served by the Atlas's image service. */
+    static String imageUrlFromRecord(JsonObject record) {
+        return string(record, "largeImageUrl", "imageUrl", "smallImageUrl", "thumbnailUrl");
     }
 
     /** Finds individual records within a radius of a point. */
@@ -235,7 +361,12 @@ public class AlaClient {
     }
 
     private static String encode(String value) {
-        return value == null ? "" : URLEncoder.encode(value, StandardCharsets.UTF_8);
+        if (value == null) {
+            return "";
+        }
+        // URLEncoder is form encoding: it writes '+' for a space. Biocache's filter parsing does
+        // not treat '+' as a space, so every space must be a literal '%20' instead.
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     /** Restricts a search to one taxon rather than matching the words anywhere in a record. */

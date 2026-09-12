@@ -42,6 +42,14 @@ public class CachedSpeciesService implements SpeciesService {
     /** Occurrence data is added to continually, so it is held for an hour. */
     private static final Duration OCCURRENCE_TTL = Duration.ofHours(1);
 
+    /**
+     * Bumped whenever a payload's shape changes, so entries written by an older build are never
+     * served to a newer one. Without this, a profile cached before the description field existed
+     * would keep hiding it for a full TTL after an upgrade. v3: profile photos now come from ALA's
+     * occurrence records instead of Wikipedia.
+     */
+    private static final String PAYLOAD_FORMAT = "v3";
+
     private static final Type SUMMARY_LIST = new TypeToken<List<SpeciesSummary>>() {}.getType();
     private static final Type POINT_LIST = new TypeToken<List<OccurrencePoint>>() {}.getType();
     private static final Type AREA_LIST = new TypeToken<List<AreaCount>>() {}.getType();
@@ -74,6 +82,9 @@ public class CachedSpeciesService implements SpeciesService {
     public CachedSpeciesService(SpeciesService delegate, ApiCacheDao cache) {
         this.delegate = delegate;
         this.cache = cache;
+        // Housekeeping: entries older than the longest TTL can never be served again, so they are
+        // dropped at startup rather than accumulating — including any left behind by older builds.
+        cache.deleteExpired(SPECIES_TTL);
     }
 
     @Override
@@ -165,7 +176,7 @@ public class CachedSpeciesService implements SpeciesService {
     }
 
     private static String key(String prefix, Object... parts) {
-        StringBuilder builder = new StringBuilder(prefix);
+        StringBuilder builder = new StringBuilder(PAYLOAD_FORMAT).append(':').append(prefix);
         for (Object part : parts) {
             builder.append(':').append(part);
         }

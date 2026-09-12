@@ -4,10 +4,12 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <!-- Single pest page: photo + description on the left, stats and sightings on the right. -->
@@ -26,71 +28,49 @@
             <!-- Breadcrumb back to the heat map. -->
             <HBox alignment="CENTER_LEFT" spacing="6">
                 <Hyperlink text="&lt;- Heat map" styleClass="text-link" onAction="#onBackToHeatMap"/>
-                <Label text="/ Cane toad" styleClass="muted"/>
+                <Label fx:id="breadcrumbLabel" text="/ Loading..." styleClass="muted"/>
             </HBox>
 
             <HBox spacing="16" VBox.vgrow="ALWAYS">
                 <!-- Left: photo, name and description. -->
                 <VBox styleClass="card" HBox.hgrow="ALWAYS" spacing="12">
-                    <Region prefHeight="220" styleClass="pest-photo"/>
+                    <StackPane>
+                        <Region fx:id="photoPlaceholder" prefHeight="220" styleClass="pest-photo"/>
+                        <ImageView fx:id="photoView" fitHeight="220" preserveRatio="true"/>
+                    </StackPane>
                     <HBox alignment="CENTER_LEFT" spacing="10">
                         <VBox spacing="1" HBox.hgrow="ALWAYS">
-                            <Label text="Cane toad" styleClass="page-title"/>
-                            <Label text="Rhinella marina" styleClass="muted sci-name"/>
+                            <Label fx:id="nameLabel" text="Loading..." styleClass="page-title"/>
+                            <Label fx:id="sciNameLabel" text="" styleClass="muted sci-name"/>
                         </VBox>
-                        <Label text="High threat" styleClass="threat-chip threat-high"/>
+                        <Label fx:id="threatChip" text="" styleClass="threat-chip threat-high"
+                               visible="false"/>
                     </HBox>
-                    <Label text="Large, warty amphibian with dry olive-brown skin and prominent poison glands on the shoulders. Active at night; gather near lights and water after rain." wrapText="true"/>
+                    <Label fx:id="descriptionLabel" wrapText="true" text="Loading species description..."/>
                     <Label text="How to report it" styleClass="section-title"/>
                     <VBox spacing="4">
                         <Label text="- Photograph the animal from the side if it is safe to do so" wrapText="true"/>
                         <Label text="- Note the suburb, time and roughly how many you saw" wrapText="true"/>
-                        <Label text="- Do not touch it - the glands can irritate skin and are toxic to pets" wrapText="true"/>
-                    </VBox>
-                    <VBox styleClass="note-warn" spacing="4">
-                        <Label text="If you find one" styleClass="section-title"/>
-                        <Label text="Photograph the frog, keep pets away, and log it here. Humane disposal is only permitted by trained residents - check your local council rules first." wrapText="true"/>
+                        <Label text="- Do not handle it - report it here so it can be verified" wrapText="true"/>
                     </VBox>
                 </VBox>
 
                 <!-- Right: stats, sightings map and recent records. -->
                 <VBox prefWidth="300" minWidth="300" spacing="12">
                     <VBox styleClass="card" spacing="8">
-                        <GridPane hgap="12" vgap="8">
-                            <Label text="FAMILY" styleClass="field-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <Label text="Bufonidae" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                            <Label text="NATIVE RANGE" styleClass="field-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                            <Label text="South America" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                            <Label text="IN QLD SINCE" styleClass="field-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                            <Label text="1935" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-                            <Label text="SIGHTINGS" styleClass="field-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                            <Label text="1,224" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-                            <Label text="REPORTS" styleClass="field-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                            <Label text="418" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-                        </GridPane>
+                        <Label text="Atlas of Living Australia" styleClass="section-title"/>
+                        <Label fx:id="alaRecordsLabel" text="Counting nearby records..."
+                               wrapText="true" styleClass="muted"/>
                     </VBox>
 
                     <VBox styleClass="card" spacing="8">
                         <Label text="Where it's been seen" styleClass="section-title"/>
-                        <Region prefHeight="110" styleClass="map-canvas"/>
+                        <Pane fx:id="sightingsMap" prefHeight="110" styleClass="map-canvas"/>
                     </VBox>
 
                     <VBox styleClass="card" spacing="8">
-                        <Label text="Recent sightings" styleClass="section-title"/>
-                        <VBox spacing="2">
-                            <Label text="Kedron Brook" styleClass="section-title"/>
-                            <Label text="1 hour ago" styleClass="muted"/>
-                        </VBox>
-                        <Region styleClass="divider"/>
-                        <VBox spacing="2">
-                            <Label text="Bracken Ridge" styleClass="section-title"/>
-                            <Label text="1 week ago" styleClass="muted"/>
-                        </VBox>
-                        <Region styleClass="divider"/>
-                        <VBox spacing="2">
-                            <Label text="Gordon Park" styleClass="section-title"/>
-                            <Label text="2 weeks ago" styleClass="muted"/>
-                        </VBox>
+                        <Label text="Recent Atlas records" styleClass="section-title"/>
+                        <VBox fx:id="recentSightingsBox" spacing="2"/>
                     </VBox>
 
                     <Button text="+ Report a sighting" maxWidth="Infinity" onAction="#onReportSighting" mnemonicParsing="false"/>

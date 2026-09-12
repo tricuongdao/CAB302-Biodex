@@ -200,6 +200,27 @@ class CachedSpeciesServiceTest {
         assertEquals(CountingSpeciesService.SCIENTIFIC_NAME, results.get(0).getScientificName());
     }
 
+    @Test
+    void aProfileWrittenByAnOlderBuildIsNotServed() throws SQLException {
+        // Exactly the shape the pre-description build stored under the old, unversioned key
+        // format: no description, no image. It must never be served by this build.
+        String legacyPayload = "{\"guid\":\"" + CountingSpeciesService.GUID + "\","
+                + "\"scientificName\":\"" + CountingSpeciesService.SCIENTIFIC_NAME + "\","
+                + "\"commonName\":\"" + CountingSpeciesService.COMMON_NAME + "\","
+                + "\"invasive\":false}";
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("INSERT INTO api_cache (cache_key, payload, fetched_at) VALUES "
+                    + "('species:profile:" + CountingSpeciesService.GUID + "', '"
+                    + legacyPayload.replace("'", "''") + "', CURRENT_TIMESTAMP)");
+        }
+
+        SpeciesProfile profile = service.profile(CountingSpeciesService.GUID);
+
+        assertEquals(1, client.getProfileCalls(), "a stale-format entry must be refetched");
+        assertEquals("A toxic toad.", profile.getDescription(),
+                "the freshly fetched payload should carry the description");
+    }
+
     /** Backdates every cached entry so the service sees it as expired. */
     private void ageEveryEntryBy(Duration amount) throws SQLException {
         String stamp = SQLITE_TIMESTAMP.format(
