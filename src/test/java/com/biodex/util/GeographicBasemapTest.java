@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
@@ -106,7 +107,9 @@ class GeographicBasemapTest {
                     });
                     Parent root = loader.load();
                     Scene scene = new Scene(root, 1200, 760);
-                    scene.getStylesheets().add(getClass().getResource("/com/biodex/css/light-theme.css").toExternalForm());
+                    scene.getStylesheets().add(Objects.requireNonNull(
+                            getClass().getResource("/com/biodex/css/light-theme.css"),
+                            "Light theme stylesheet must be bundled").toExternalForm());
                     stage.setScene(scene);
                     stage.sizeToScene();
                     root.applyCss();
