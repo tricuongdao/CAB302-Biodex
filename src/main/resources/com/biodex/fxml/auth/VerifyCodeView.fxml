@@ -17,7 +17,7 @@
            prefWidth="1200"
            prefHeight="760">
 
-    <VBox spacing="10">
+    <VBox spacing="10" alignment="TOP_CENTER">
         <padding>
             <Insets top="8" right="32" bottom="24" left="32"/>
         </padding>
