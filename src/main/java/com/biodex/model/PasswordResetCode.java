@@ -10,6 +10,7 @@ public class PasswordResetCode {
     private int userId;
     private String codeHash;
     private String expiresAt;
+    private int attemptCount;
     private boolean used;
     private String createdAt;
 
@@ -53,6 +54,10 @@ public class PasswordResetCode {
     public void setExpiresAt(String expiresAt) {
         this.expiresAt = expiresAt;
     }
+
+    public int getAttemptCount() { return attemptCount; }
+
+    public void setAttemptCount(int attemptCount) { this.attemptCount = attemptCount; }
 
     public boolean isUsed() {
         return used;

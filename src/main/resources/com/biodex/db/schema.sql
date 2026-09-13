@@ -55,14 +55,18 @@ CREATE TABLE IF NOT EXISTS sightings (
 );
 
 CREATE TABLE IF NOT EXISTS password_reset_codes (
-    code_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    INTEGER NOT NULL,
-    code_hash  TEXT    NOT NULL,
-    expires_at TEXT    NOT NULL,
-    used       INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    code_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL,
+    code_hash     TEXT    NOT NULL,
+    expires_at    TEXT    NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    used          INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_codes_user_id
+ON password_reset_codes (user_id);
 
 CREATE TABLE IF NOT EXISTS two_factor_codes (
     code_id    INTEGER PRIMARY KEY AUTOINCREMENT,
