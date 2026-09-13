@@ -51,56 +51,64 @@ public abstract class BaseDao {
 
     /** Runs a query expected to match at most one row. */
     protected <T> Optional<T> queryOne(String sql, ParameterBinder binder, RowMapper<T> mapper) {
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            binder.bind(statement);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? Optional.of(mapper.map(resultSet)) : Optional.empty();
+        synchronized (getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                binder.bind(statement);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    return resultSet.next() ? Optional.of(mapper.map(resultSet)) : Optional.empty();
+                }
+            } catch (SQLException e) {
+                throw new DataAccessException("Query failed: " + sql, e);
             }
-        } catch (SQLException e) {
-            throw new DataAccessException("Query failed: " + sql, e);
         }
     }
 
     /** Runs a query and maps every row. */
     protected <T> List<T> queryMany(String sql, ParameterBinder binder, RowMapper<T> mapper) {
         List<T> rows = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            binder.bind(statement);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    rows.add(mapper.map(resultSet));
+        synchronized (getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                binder.bind(statement);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        rows.add(mapper.map(resultSet));
+                    }
                 }
+            } catch (SQLException e) {
+                throw new DataAccessException("Query failed: " + sql, e);
             }
-        } catch (SQLException e) {
-            throw new DataAccessException("Query failed: " + sql, e);
         }
         return rows;
     }
 
     /** Runs an INSERT, UPDATE or DELETE and returns the number of affected rows. */
     protected int update(String sql, ParameterBinder binder) {
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            binder.bind(statement);
-            return statement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DataAccessException("Update failed: " + sql, e);
+        synchronized (getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                binder.bind(statement);
+                return statement.executeUpdate();
+            } catch (SQLException e) {
+                throw new DataAccessException("Update failed: " + sql, e);
+            }
         }
     }
 
     /** Runs an INSERT and returns the generated primary key. */
     protected int insertReturningKey(String sql, ParameterBinder binder) {
-        try (PreparedStatement statement =
-                     connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            binder.bind(statement);
-            statement.executeUpdate();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getInt(1);
+        synchronized (getConnection()) {
+            try (PreparedStatement statement =
+                    connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                binder.bind(statement);
+                statement.executeUpdate();
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        return keys.getInt(1);
+                    }
                 }
+                throw new DataAccessException("Insert returned no generated key: " + sql);
+            } catch (SQLException e) {
+                throw new DataAccessException("Insert failed: " + sql, e);
             }
-            throw new DataAccessException("Insert returned no generated key: " + sql);
-        } catch (SQLException e) {
-            throw new DataAccessException("Insert failed: " + sql, e);
         }
     }
 

@@ -44,6 +44,27 @@ public interface SpeciesService {
     SpeciesProfile profile(String guid);
 
     /**
+     * Fetches just the photo URL for one species, without the description fallback chain.
+     *
+     * <p>The default implementation reads it off {@link #profile(String)}, which also pays for
+     * the Wikipedia description lookup the image caller never uses. Network-backed
+     * implementations should override this with a cheaper image-only fetch; the cached
+     * implementation keeps the result under its own key so image enrichment never re-fetches a
+     * URL it already knows. Like every other method here this blocks and never throws — null
+     * means "no image or lookup failed".
+     *
+     * @param guid the identifier from a {@link SpeciesSummary}
+     * @return the photo URL, or null when there is none or the lookup failed
+     */
+    default String imageUrl(String guid) {
+        if (guid == null || guid.isBlank()) {
+            return null;
+        }
+        SpeciesProfile profile = profile(guid);
+        return profile == null ? null : profile.getImageUrl();
+    }
+
+    /**
      * Finds individual recorded sightings within a radius of a point, for pin-style mapping.
      *
      * @param scientificName the species to search for

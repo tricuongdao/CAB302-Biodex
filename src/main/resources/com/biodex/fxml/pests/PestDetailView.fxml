@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Single pest page: photo + description on the left, stats and sightings on the right. -->
+<!-- Pest Detail screen: hosts SpeciesDetail (left) + LocalSightings (right) -->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.biodex.controller.pests.PestDetailController"
             prefWidth="1200" prefHeight="760">
@@ -29,75 +24,17 @@
             <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
 
             <!-- Breadcrumb back to the search page. -->
-            <HBox alignment="CENTER_LEFT" spacing="6">
-                <Hyperlink text="&lt;- Pest search" styleClass="text-link" onAction="#onBackToPestDetails"/>
-                <Label fx:id="breadcrumbLabel" text="/ Loading..." styleClass="muted"/>
-            </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="6">
+                            <Hyperlink text="Back to search" styleClass="text-link" onAction="#onBackToPestDetails"/>
+                            <Label fx:id="breadcrumbLabel" text="/ Loading..." styleClass="muted"/>
+                        </HBox>
 
-            <HBox spacing="16">
-                <!-- Left: photo, facts, description and guidance. -->
-                <VBox styleClass="card" HBox.hgrow="ALWAYS" spacing="12">
-                    <StackPane>
-                        <Region fx:id="photoPlaceholder" prefHeight="220" styleClass="pest-photo"/>
-                        <ImageView fx:id="photoView" fitHeight="220" preserveRatio="true"/>
-                    </StackPane>
-                    <HBox alignment="CENTER_LEFT" spacing="10">
-                        <VBox spacing="1" HBox.hgrow="ALWAYS">
-                            <Label fx:id="nameLabel" text="Loading..." styleClass="page-title"/>
-                            <Label fx:id="sciNameLabel" text="" styleClass="muted sci-name"/>
-                        </VBox>
-                        <Label fx:id="threatChip" text="" styleClass="threat-chip threat-high"
-                               visible="false"/>
-                    </HBox>
+            <HBox spacing="16" VBox.vgrow="ALWAYS">
+                <!-- Left pane: SpeciesDetailController -->
+                <fx:include source="SpeciesDetailView.fxml" fx:id="speciesDetail"/>
 
-                    <!-- Category chips, e.g. Invasive / Toxic / Native. -->
-                    <HBox fx:id="tagsBox" spacing="6" visible="false"/>
-
-                    <!-- At a glance facts, e.g. Family, Size, Conservation status. -->
-                    <VBox fx:id="factsBox" spacing="6"/>
-
-                    <!-- Description rendered as readable paragraphs. -->
-                    <VBox fx:id="descriptionBox" spacing="6">
-                        <Label text="Loading species description..." styleClass="muted" wrapText="true"/>
-                    </VBox>
-
-                    <!-- Threat profile bars, e.g. Aggression / Spreading risk. -->
-                    <VBox fx:id="threatBox" spacing="6" visible="false"/>
-
-                    <!-- Safe handling and disposal guidance (curated). -->
-                    <Label fx:id="disposalLabel" wrapText="true" styleClass="note-warn"
-                           text="" visible="false"/>
-                    <Label fx:id="reportAuthorityLabel" wrapText="true" styleClass="muted"
-                           text="" visible="false"/>
-
-                    <Label text="How to report it" styleClass="section-title"/>
-                    <VBox spacing="4">
-                        <Label text="- Photograph the animal from the side if it is safe to do so" wrapText="true"/>
-                        <Label text="- Note the suburb, time and roughly how many you saw" wrapText="true"/>
-                        <Label text="- Do not handle it - report it here so it can be verified" wrapText="true"/>
-                    </VBox>
-                </VBox>
-
-                <!-- Right: stats, sightings map and recent records. -->
-                <VBox prefWidth="300" minWidth="300" spacing="12">
-                    <VBox styleClass="card" spacing="8">
-                        <Label text="Atlas of Living Australia" styleClass="section-title"/>
-                        <Label fx:id="alaRecordsLabel" text="Counting nearby records..."
-                               wrapText="true" styleClass="muted"/>
-                    </VBox>
-
-                    <VBox styleClass="card" spacing="8">
-                        <Label text="Where it's been seen" styleClass="section-title"/>
-                        <Pane fx:id="sightingsMap" prefHeight="110" styleClass="map-canvas"/>
-                    </VBox>
-
-                    <VBox styleClass="card" spacing="8">
-                        <Label text="Recent Atlas records" styleClass="section-title"/>
-                        <VBox fx:id="recentSightingsBox" spacing="2"/>
-                    </VBox>
-
-                    <Button text="+ Report a sighting" maxWidth="Infinity" onAction="#onReportSighting" mnemonicParsing="false"/>
-                </VBox>
+                <!-- Right pane: LocalSightingsController -->
+                <fx:include source="LocalSightingsView.fxml" fx:id="localSightings"/>
             </HBox>
         </VBox>
         </ScrollPane>

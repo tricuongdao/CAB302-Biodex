@@ -91,6 +91,12 @@ public final class CuratedSpeciesService implements SpeciesService {
         return merge(base, curated);
     }
 
+    /** Photos always come from the delegate — the curated knowledge base carries none. */
+    @Override
+    public String imageUrl(String guid) {
+        return delegate.imageUrl(guid);
+    }
+
     @Override
     public List<OccurrencePoint> occurrencesNear(
             String scientificName, double lat, double lon, double radiusKm, int limit) {
