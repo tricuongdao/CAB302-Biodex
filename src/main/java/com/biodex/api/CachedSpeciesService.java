@@ -45,10 +45,11 @@ public class CachedSpeciesService implements SpeciesService {
     /**
      * Bumped whenever a payload's shape changes, so entries written by an older build are never
      * served to a newer one. Without this, a profile cached before the description field existed
-     * would keep hiding it for a full TTL after an upgrade. v3: profile photos now come from ALA's
-     * occurrence records instead of Wikipedia.
+     * would keep hiding it for a full TTL after an upgrade. v4: profiles now carry the curated
+     * detail fields (taxonomy, tags, habitat, size, disposal guidance, threat ratings) merged by
+     * {@link CuratedSpeciesService}.
      */
-    private static final String PAYLOAD_FORMAT = "v3";
+    private static final String PAYLOAD_FORMAT = "v4";
 
     private static final Type SUMMARY_LIST = new TypeToken<List<SpeciesSummary>>() {}.getType();
     private static final Type POINT_LIST = new TypeToken<List<OccurrencePoint>>() {}.getType();

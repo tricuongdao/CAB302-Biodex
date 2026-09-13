@@ -34,14 +34,19 @@ public final class ServiceFactory {
      * The shared species service — cached, network-backed, and safe to call from any page. Built on
      * first use, so importing this class costs nothing.
      *
+     * <p>Both paths pass through {@link CuratedSpeciesService}, so the page-level detail fields
+     * (rich descriptions, habitat, disposal guidance...) come from the bundled knowledge base no
+     * matter whether the live Atlas or the offline fake service is underneath.
+     *
      * <p>Remember that every method on the returned service blocks. Call it inside a
      * {@code javafx.concurrent.Task}, never on the FX Application Thread.
      */
     public static synchronized SpeciesService speciesService() {
         if (speciesService == null) {
             speciesService = OFFLINE
-                    ? new FakeSpeciesService()
-                    : new CachedSpeciesService(new AlaSpeciesService(), new ApiCacheDao());
+                    ? new CuratedSpeciesService(new FakeSpeciesService())
+                    : new CachedSpeciesService(
+                            new CuratedSpeciesService(new AlaSpeciesService()), new ApiCacheDao());
         }
         return speciesService;
     }

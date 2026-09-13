@@ -102,6 +102,7 @@ public class AlaClient {
         String commonName = firstCommonName(root);
         String description = description(root);
         String image = imageUrl(root, taxonConcept);
+        boolean invasive = looksInvasive(root);
 
         // The profile payload itself is often bare: most taxa carry neither a description nor an
         // inlined image. A missing photo falls back to ALA's occurrence records — a taxon with
@@ -122,7 +123,14 @@ public class AlaClient {
                 commonName,
                 description,
                 image,
-                looksInvasive(root));
+                invasive,
+                string(taxonConcept, "family"),
+                string(taxonConcept, "order", "orderName"),
+                string(taxonConcept, "class", "className"),
+                string(taxonConcept, "kingdom"),
+                conservationStatus(root),
+                categoryTags(root, invasive),
+                null, null, null, null, Map.of());
     }
 
     /**
@@ -507,6 +515,66 @@ public class AlaClient {
             }
         }
         return false;
+    }
+
+    /**
+     * The first substantive conservation status, e.g. "Vulnerable" or "Declared pest". Statuses
+     * that only say the species has not been assessed are skipped until there is nothing else, and
+     * a species with no status at all yields null.
+     */
+    private static String conservationStatus(JsonObject root) {
+        JsonObject statuses = object(root, "conservationStatuses");
+        if (statuses == null) {
+            return null;
+        }
+        String fallback = null;
+        for (Map.Entry<String, JsonElement> entry : statuses.entrySet()) {
+            if (!entry.getValue().isJsonObject()) {
+                continue;
+            }
+            String status = string(entry.getValue().getAsJsonObject(), "status");
+            if (status == null || status.isBlank()) {
+                continue;
+            }
+            if (fallback == null) {
+                fallback = status;
+            }
+            if (!isBlankStatus(status)) {
+                return status;
+            }
+        }
+        return fallback;
+    }
+
+    /** Statuses that merely say the species was not assessed add no information to the page. */
+    private static boolean isBlankStatus(String status) {
+        String lower = status.toLowerCase(Locale.ROOT);
+        return lower.equals("not evaluated") || lower.equals("not assessed")
+                || lower.equals("not listed") || lower.equals("not applicable")
+                || lower.equals("none") || lower.equals("unknown") || lower.equals("-");
+    }
+
+    /**
+     * Short category labels from the Atlas ("Invasive", "Exotic", ...) for the tag chips on the
+     * detail page. Tiny or huge strings are dropped as codes or descriptions, duplicates are
+     * removed, and the invasive flag always yields an "Invasive" chip.
+     */
+    private static List<String> categoryTags(JsonObject root, boolean invasive) {
+        List<String> tags = new ArrayList<>();
+        for (JsonElement element : array(root, "categories")) {
+            if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+                continue;
+            }
+            String category = element.getAsString().trim();
+            if (category.length() < 3 || category.length() > 40 || tags.contains(category)) {
+                continue;
+            }
+            tags.add(category);
+        }
+        if (invasive && !tags.contains("Invasive")) {
+            tags.add("Invasive");
+        }
+        return List.copyOf(tags);
     }
 
     private static boolean mentionsPest(String value) {

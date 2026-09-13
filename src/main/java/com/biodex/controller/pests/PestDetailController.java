@@ -14,10 +14,14 @@ import com.biodex.util.BrisbaneMapProjection.ProjectedPoint;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
@@ -25,6 +29,7 @@ import javafx.scene.shape.Circle;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -50,6 +55,10 @@ public class PestDetailController extends BaseController {
     /** How many dots are drawn at most; beyond that the mini-map is unreadable. */
     private static final int MAX_DOTS = 150;
 
+    /** The threat profile rows shown for every species, in a consistent order. */
+    private static final List<String> THREAT_METRICS =
+            List.of("Aggression", "Sting severity", "Spread risk");
+
     /** Injected from the fx:include with fx:id="sidebar" in PestDetailView.fxml. */
     @FXML
     private SidebarController sidebarController;
@@ -66,7 +75,17 @@ public class PestDetailController extends BaseController {
     @FXML
     private Label threatChip;
     @FXML
-    private Label descriptionLabel;
+    private HBox tagsBox;
+    @FXML
+    private VBox factsBox;
+    @FXML
+    private VBox descriptionBox;
+    @FXML
+    private VBox threatBox;
+    @FXML
+    private Label disposalLabel;
+    @FXML
+    private Label reportAuthorityLabel;
     @FXML
     private Label alaRecordsLabel;
     @FXML
@@ -100,19 +119,20 @@ public class PestDetailController extends BaseController {
         sciNameLabel.setText("");
         breadcrumbLabel.setText("/ nothing selected");
         threatChip.setVisible(false);
-        descriptionLabel.setText(
-                "Pick a species from the Pest details search and its Atlas record will load here.");
         photoView.setVisible(false);
         alaRecordsLabel.setText("");
         sightingsMap.getChildren().clear();
         recentSightingsBox.getChildren().clear();
         recentSightingsBox.getChildren().add(
                 placeholderRow("No species chosen yet - open Pest details to search."));
+        clearDetailSections();
+        descriptionBox.getChildren().setAll(paragraph(
+                "Pick a species from the Pest details search and its Atlas record will load here."));
     }
 
     @FXML
-    private void onBackToHeatMap() {
-        router.go(Route.HEAT_MAP);
+    private void onBackToPestDetails() {
+        router.go(Route.PEST_DETAILS);
     }
 
     @FXML
@@ -141,7 +161,8 @@ public class PestDetailController extends BaseController {
         });
         task.setOnFailed(event -> {
             if (activeProfile == task) {
-                descriptionLabel.setText("Species description could not be loaded.");
+                descriptionBox.getChildren().setAll(paragraph(
+                        "Species description could not be loaded."));
             }
         });
 
@@ -177,7 +198,8 @@ public class PestDetailController extends BaseController {
 
     private void showProfile(SpeciesProfile profile, SpeciesSummary fallback) {
         if (profile == null) {
-            descriptionLabel.setText("Species description could not be loaded.");
+            descriptionBox.getChildren().setAll(paragraph(
+                    "Species description could not be loaded."));
             return;
         }
         String title = firstNonBlank(profile.getCommonName(), displayName(fallback));
@@ -187,9 +209,12 @@ public class PestDetailController extends BaseController {
             sciNameLabel.setText(profile.getScientificName());
             breadcrumbLabel.setText("/ " + profile.getScientificName());
         }
-        descriptionLabel.setText(profile.getDescription() != null
-                ? profile.getDescription()
-                : "No description is available for this species.");
+
+        renderTags(profile.getTags());
+        renderFacts(profile);
+        renderDescription(profile.getDescription());
+        renderThreatBox(profile.getThreatRatings());
+        renderDisposal(profile);
 
         // The Atlas has no true threat level; it either lists the species as a pest/invasive or
         // it does not, so the chip says exactly that rather than inventing a severity.
@@ -211,6 +236,154 @@ public class PestDetailController extends BaseController {
             photoView.setImage(null);
             photoView.setVisible(false);
         }
+    }
+
+    // ---------------------------------------------------------------- detail sections
+
+    /** Renders the description as separate wrapped paragraphs. */
+    private void renderDescription(String description) {
+        descriptionBox.getChildren().clear();
+        if (description == null || description.isBlank()) {
+            descriptionBox.getChildren().add(paragraph("No description is available for this species."));
+            return;
+        }
+        for (String text : description.split("\\R{2,}|\\R(?=\\S)")) {
+            String trimmed = text.trim();
+            if (!trimmed.isEmpty()) {
+                descriptionBox.getChildren().add(paragraph(trimmed));
+            }
+        }
+    }
+
+    /** Shows the category chips, hiding the row entirely when there are none. */
+    private void renderTags(List<String> tags) {
+        tagsBox.getChildren().clear();
+        if (tags == null || tags.isEmpty()) {
+            tagsBox.setVisible(false);
+            return;
+        }
+        for (String tag : tags) {
+            if (tag == null || tag.isBlank()) {
+                continue;
+            }
+            Label chip = new Label(tag.trim());
+            chip.getStyleClass().add("tag-chip");
+            tagsBox.getChildren().add(chip);
+        }
+        tagsBox.setVisible(!tagsBox.getChildren().isEmpty());
+    }
+
+    /** Builds the "at a glance" fact rows, skipping whatever the data does not hold. */
+    private void renderFacts(SpeciesProfile profile) {
+        factsBox.getChildren().clear();
+        addFact("Family", profile.getFamily());
+        addFact("Order", profile.getOrder());
+        addFact("Class", profile.getTaxonClass());
+        addFact("Kingdom", profile.getKingdom());
+        addFact("Conservation status", profile.getConservationStatus());
+        addFact("Typical habitat", profile.getTypicalHabitat());
+        addFact("Size", profile.getSizeRange());
+    }
+
+    private void addFact(String name, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        HBox row = new HBox(10);
+        Label key = new Label(name);
+        key.getStyleClass().add("fact-key");
+        key.setMinWidth(150);
+        Label valueLabel = new Label(value.trim());
+        valueLabel.setWrapText(true);
+        HBox.setHgrow(valueLabel, Priority.ALWAYS);
+        row.getChildren().addAll(key, valueLabel);
+        factsBox.getChildren().add(row);
+    }
+
+    /** Threat profile bars, one per rated metric, in the standard order. */
+    private void renderThreatBox(Map<String, Integer> ratings) {
+        threatBox.getChildren().clear();
+        if (ratings == null || ratings.isEmpty()) {
+            threatBox.setVisible(false);
+            return;
+        }
+        Label title = new Label("Threat profile");
+        title.getStyleClass().add("section-title");
+        threatBox.getChildren().add(title);
+        for (String metric : THREAT_METRICS) {
+            Integer score = ratings.get(metric);
+            if (score != null) {
+                threatBox.getChildren().add(threatRow(metric, score));
+            }
+        }
+        for (Map.Entry<String, Integer> entry : ratings.entrySet()) {
+            if (!THREAT_METRICS.contains(entry.getKey())) {
+                threatBox.getChildren().add(threatRow(entry.getKey(), entry.getValue()));
+            }
+        }
+        threatBox.setVisible(true);
+    }
+
+    /** One named severity row: label, colour-coded bar and percentage. */
+    private HBox threatRow(String name, int score) {
+        int clamped = Math.max(0, Math.min(100, score));
+        HBox row = new HBox(8);
+        row.setAlignment(Pos.CENTER_LEFT);
+        Label metric = new Label(name);
+        metric.getStyleClass().add("metric-name");
+        ProgressBar bar = new ProgressBar();
+        bar.getStyleClass().addAll("threat-bar", severityClass(clamped));
+        bar.setProgress(clamped / 100.0);
+        HBox.setHgrow(bar, Priority.ALWAYS);
+        Label percent = new Label(clamped + "%");
+        percent.getStyleClass().add("muted");
+        percent.setMinWidth(38);
+        row.getChildren().addAll(metric, bar, percent);
+        return row;
+    }
+
+    private static String severityClass(int score) {
+        if (score >= 70) {
+            return "threat-bar-high";
+        }
+        if (score >= 35) {
+            return "threat-bar-mid";
+        }
+        return "threat-bar-low";
+    }
+
+    /** Disposal guidance and report authority, shown only when the data has something to say. */
+    private void renderDisposal(SpeciesProfile profile) {
+        String guidance = profile.getDisposalGuidance();
+        if (guidance == null || guidance.isBlank()) {
+            disposalLabel.setText("");
+            disposalLabel.setVisible(false);
+        } else {
+            disposalLabel.setText(guidance.trim());
+            disposalLabel.setVisible(true);
+        }
+        String authority = profile.getReportAuthority();
+        if (authority == null || authority.isBlank()) {
+            reportAuthorityLabel.setText("");
+            reportAuthorityLabel.setVisible(false);
+        } else {
+            reportAuthorityLabel.setText("Report to: " + authority.trim());
+            reportAuthorityLabel.setVisible(true);
+        }
+    }
+
+    /** Resets every left-hand section so the screen can show its loading or empty state. */
+    private void clearDetailSections() {
+        tagsBox.getChildren().clear();
+        tagsBox.setVisible(false);
+        factsBox.getChildren().clear();
+        descriptionBox.getChildren().clear();
+        threatBox.getChildren().clear();
+        threatBox.setVisible(false);
+        disposalLabel.setText("");
+        disposalLabel.setVisible(false);
+        reportAuthorityLabel.setText("");
+        reportAuthorityLabel.setVisible(false);
     }
 
     // ---------------------------------------------------------------- sightings
@@ -344,6 +517,13 @@ public class PestDetailController extends BaseController {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** A wrapped label used for one description paragraph or placeholder line. */
+    private static Label paragraph(String text) {
+        Label label = new Label(text);
+        label.setWrapText(true);
+        return label;
+    }
 
     private static String displayName(SpeciesSummary species) {
         if (species == null) {
