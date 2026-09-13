@@ -17,6 +17,8 @@ public enum Route {
     LOGIN("/com/biodex/fxml/auth/LoginView.fxml", "Biodex - Sign in"),
     SIGNUP("/com/biodex/fxml/auth/SignupView.fxml", "Biodex - Create account"),
     FORGOT_PASSWORD("/com/biodex/fxml/auth/ForgotPasswordView.fxml", "Biodex - Account recovery"),
+    VERIFY_CODE("/com/biodex/fxml/auth/VerifyCodeView.fxml", "Biodex - Verify code"),
+    RESET_PASSWORD("/com/biodex/fxml/auth/ResetPasswordView.fxml", "Biodex - Reset password"),
     HEAT_MAP("/com/biodex/fxml/heatmap/HeatMapView.fxml", "Biodex - Heat map"),
     IDENTIFY_PEST("/com/biodex/fxml/identify/IdentifyPestView.fxml", "Biodex - Identify a pest"),
     PEST_DETAILS("/com/biodex/fxml/pests/PestDetailsView.fxml", "Biodex - Pest details"),
