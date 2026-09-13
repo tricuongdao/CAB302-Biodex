@@ -109,6 +109,22 @@ public class CachedSpeciesService implements SpeciesService {
                 null);
     }
 
+    /**
+     * Image URLs get their own cache entry, separate from full profiles: image enrichment
+     * re-resolves the same handful of species on every visit, and a hit here avoids the whole
+     * profile chain. Stored under a new key namespace, so entries written by older builds are
+     * unaffected and no format bump is needed.
+     */
+    @Override
+    public String imageUrl(String guid) {
+        return cached(
+                key("species:image", guid),
+                SPECIES_TTL,
+                String.class,
+                () -> delegate.imageUrl(guid),
+                null);
+    }
+
     @Override
     public List<OccurrencePoint> occurrencesNear(
             String scientificName, double lat, double lon, double radiusKm, int limit) {
@@ -140,7 +156,7 @@ public class CachedSpeciesService implements SpeciesService {
      * @param emptyResult  what to return when the fetch fails and the cache is empty
      */
     private <T> T cached(String key, Duration ttl, Type type, Supplier<T> fetch, T emptyResult) {
-        Optional<ApiCacheDao.CacheEntry> entry = cache.get(key);
+        Optional<ApiCacheDao.CacheEntry> entry = readEntry(key);
 
         if (entry.isPresent() && !entry.get().isOlderThan(ttl)) {
             T hit = deserialise(entry.get().getPayload(), type);
@@ -153,7 +169,7 @@ public class CachedSpeciesService implements SpeciesService {
         try {
             T value = fetch.get();
             if (value != null) {
-                cache.put(key, GSON.toJson(value));
+                writeEntry(key, GSON.toJson(value));
             }
             return value;
         } catch (ApiException e) {
@@ -164,6 +180,27 @@ public class CachedSpeciesService implements SpeciesService {
                 }
             }
             return emptyResult;
+        }
+    }
+
+    /**
+     * Reads one cache entry. A broken cache must never break image resolution or search:
+     * on any storage failure the caller simply treats it as a miss and fetches live.
+     */
+    private Optional<ApiCacheDao.CacheEntry> readEntry(String key) {
+        try {
+            return cache.get(key);
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Stores one cache entry, swallowing storage failures so a fetched value is never lost. */
+    private void writeEntry(String key, String payload) {
+        try {
+            cache.put(key, payload);
+        } catch (RuntimeException e) {
+            // Cache is a bonus; the fetched value is still returned to the caller.
         }
     }
 

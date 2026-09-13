@@ -1,133 +1,91 @@
 package com.biodex.controller.pests;
 
-import com.biodex.api.ServiceFactory;
-import com.biodex.api.SpeciesService;
-import com.biodex.api.dto.OccurrencePoint;
-import com.biodex.api.dto.SpeciesProfile;
 import com.biodex.api.dto.SpeciesSummary;
 import com.biodex.controller.BaseController;
 import com.biodex.controller.common.SidebarController;
+import com.biodex.dao.SpeciesDAO;
+import com.biodex.model.Species;
 import com.biodex.routing.Route;
 import com.biodex.session.SpeciesSelection;
-import com.biodex.util.BrisbaneMapProjection;
-import com.biodex.util.BrisbaneMapProjection.ProjectedPoint;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.geometry.Pos;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-import javafx.scene.shape.Circle;
 
-import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
- * Single pest page.
- *
- * <p>The species shown is whatever {@link SpeciesSelection} holds — Pest Details sets it before
- * routing here, and a cold open with nothing picked shows an empty state. The profile and the
- * Brisbane-area
- * occurrence records both load from the ALA species service on background tasks, so a slow or
- * failing network leaves the page usable: fields keep their loading text and the mini-map simply
- * shows fewer dots.
+ * Parent controller for the Pest Detail screen.
+ * Loads the local curated Species record once, then delegates display to the two child panes:
+ * - SpeciesDetailController (left): photo, threat profile, facts, disposal guidance
+ * - LocalSightingsController (right): density cards, recent reports
  */
 public class PestDetailController extends BaseController {
 
-    /** Date format for the recent-records list, matching the heat map. */
-    private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("d MMM uuuu");
+    @FXML private SidebarController sidebarController;
+    @FXML private SpeciesDetailController speciesDetailController;
+    @FXML private LocalSightingsController localSightingsController;
+    @FXML private javafx.scene.control.Label breadcrumbLabel;
 
-    /** Occurrence searches centre on the Brisbane CBD. */
-    private static final double BRISBANE_LAT = -27.47;
-    private static final double BRISBANE_LON = 153.03;
-    private static final double SEARCH_RADIUS_KM = 50;
-
-    /** How many dots are drawn at most; beyond that the mini-map is unreadable. */
-    private static final int MAX_DOTS = 150;
-
-    /** The threat profile rows shown for every species, in a consistent order. */
-    private static final List<String> THREAT_METRICS =
-            List.of("Aggression", "Sting severity", "Spread risk");
-
-    /** Injected from the fx:include with fx:id="sidebar" in PestDetailView.fxml. */
-    @FXML
-    private SidebarController sidebarController;
-    @FXML
-    private Label breadcrumbLabel;
-    @FXML
-    private Region photoPlaceholder;
-    @FXML
-    private ImageView photoView;
-    @FXML
-    private Label nameLabel;
-    @FXML
-    private Label sciNameLabel;
-    @FXML
-    private Label threatChip;
-    @FXML
-    private HBox tagsBox;
-    @FXML
-    private VBox factsBox;
-    @FXML
-    private VBox descriptionBox;
-    @FXML
-    private VBox threatBox;
-    @FXML
-    private Label disposalLabel;
-    @FXML
-    private Label reportAuthorityLabel;
-    @FXML
-    private Label alaRecordsLabel;
-    @FXML
-    private Pane sightingsMap;
-    @FXML
-    private VBox recentSightingsBox;
-
-    private final SpeciesService speciesService = ServiceFactory.speciesService();
-
-    private Task<SpeciesProfile> activeProfile;
-    private Task<List<OccurrencePoint>> activeOccurrences;
+    private final SpeciesDAO speciesDAO = new SpeciesDAO();
 
     @FXML
-    private void initialize() {
-        sidebarController.setActive("pests");
-        SpeciesSummary selection = SpeciesSelection.getInstance().getCurrent();
-        if (selection == null) {
-            showNoSelection();
-            return;
+        private void initialize() {
+            sidebarController.setActive("pests");
+
+            // Ensure species data is seeded before loading
+            speciesDAO.seedIfEmpty();
+
+            SpeciesSummary selection = SpeciesSelection.getInstance().getCurrent();
+            if (selection == null) {
+                showNoSelection();
+                return;
+            }
+
+            breadcrumbLabel.setText("/ " + displayName(selection));
+            loadLocalSpecies(selection);
         }
-        nameLabel.setText(displayName(selection));
-        sciNameLabel.setText(orBlank(selection.getScientificName()));
-        breadcrumbLabel.setText("/ " + displayName(selection));
-        loadProfile(selection);
-        loadOccurrences(selection);
+
+    /** Loads the local Species record by ALA guid or scientific name. */
+    private void loadLocalSpecies(SpeciesSummary selection) {
+        Task<Optional<Species>> task = new Task<>() {
+            @Override
+            protected Optional<Species> call() {
+                // Try by ALA guid first
+                if (selection.getGuid() != null && !selection.getGuid().isBlank()) {
+                    Optional<Species> byGuid = speciesDAO.findByAlaGuid(selection.getGuid());
+                    if (byGuid.isPresent()) return byGuid;
+                }
+                // Fall back to scientific name
+                if (selection.getScientificName() != null && !selection.getScientificName().isBlank()) {
+                    return speciesDAO.findByScientificName(selection.getScientificName());
+                }
+                return Optional.empty();
+            }
+        };
+        task.setOnSucceeded(e -> {
+            Optional<Species> speciesOpt = task.getValue();
+            if (speciesOpt.isPresent()) {
+                Species species = speciesOpt.get();
+                speciesDetailController.display(species);
+                localSightingsController.load(species.getSpeciesId());
+            } else {
+                showNotInLocalDB(selection);
+            }
+        });
+        task.setOnFailed(e -> showNotInLocalDB(selection));
+
+        new Thread(task, "local-species-loader").start();
     }
 
-    /** The screen opened without a species picked from Pest Details. */
     private void showNoSelection() {
-        nameLabel.setText("No species selected");
-        sciNameLabel.setText("");
         breadcrumbLabel.setText("/ nothing selected");
-        threatChip.setVisible(false);
-        photoView.setVisible(false);
-        alaRecordsLabel.setText("");
-        sightingsMap.getChildren().clear();
-        recentSightingsBox.getChildren().clear();
-        recentSightingsBox.getChildren().add(
-                placeholderRow("No species chosen yet - open Pest details to search."));
-        clearDetailSections();
-        descriptionBox.getChildren().setAll(paragraph(
-                "Pick a species from the Pest details search and its Atlas record will load here."));
+        speciesDetailController.display(null);
+        localSightingsController.load(-1);
+    }
+
+    private void showNotInLocalDB(SpeciesSummary selection) {
+        breadcrumbLabel.setText("/ " + displayName(selection) + " (not in local DB)");
+        // Could show a placeholder in the child panes
     }
 
     @FXML
@@ -135,415 +93,11 @@ public class PestDetailController extends BaseController {
         router.go(Route.PEST_DETAILS);
     }
 
-    @FXML
-    private void onReportSighting() {
-        router.go(Route.IDENTIFY_PEST);
-    }
-
-    // ---------------------------------------------------------------- profile
-
-    /** Loads the species profile away from the FX thread, resolving the guid by name if needed. */
-    private void loadProfile(SpeciesSummary selection) {
-        if (activeProfile != null) {
-            activeProfile.cancel();
-        }
-        Task<SpeciesProfile> task = new Task<>() {
-            @Override
-            protected SpeciesProfile call() {
-                return resolveProfile(selection);
-            }
-        };
-        activeProfile = task;
-        task.setOnSucceeded(event -> {
-            if (activeProfile == task) {
-                showProfile(task.getValue(), selection);
-            }
-        });
-        task.setOnFailed(event -> {
-            if (activeProfile == task) {
-                descriptionBox.getChildren().setAll(paragraph(
-                        "Species description could not be loaded."));
-            }
-        });
-
-        Thread loader = new Thread(task, "species-profile-loader");
-        loader.setDaemon(true);
-        loader.start();
-    }
-
-    /**
-     * Looks the profile up by guid, falling back to a name search for services that do not know the
-     * stored guid — the offline fake service only answers to its own guids, and the Atlas answer is
-     * then cached for next time.
-     */
-    private SpeciesProfile resolveProfile(SpeciesSummary selection) {
-        SpeciesProfile profile = speciesService.profile(selection.getGuid());
-        if (profile != null) {
-            return profile;
-        }
-        String query = selection.getCommonName() != null
-                ? selection.getCommonName()
-                : selection.getScientificName();
-        if (query == null) {
-            return null;
-        }
-        List<SpeciesSummary> matches = speciesService.autocomplete(query, 1);
-        if (matches.isEmpty()) {
-            return null;
-        }
-        SpeciesSummary resolved = matches.get(0);
-        SpeciesSelection.getInstance().setCurrent(resolved);
-        return speciesService.profile(resolved.getGuid());
-    }
-
-    private void showProfile(SpeciesProfile profile, SpeciesSummary fallback) {
-        if (profile == null) {
-            descriptionBox.getChildren().setAll(paragraph(
-                    "Species description could not be loaded."));
-            return;
-        }
-        String title = firstNonBlank(profile.getCommonName(), displayName(fallback));
-        nameLabel.setText(title);
-        router.setTitle("Biodex - " + title);
-        if (profile.getScientificName() != null) {
-            sciNameLabel.setText(profile.getScientificName());
-            breadcrumbLabel.setText("/ " + profile.getScientificName());
-        }
-
-        renderTags(profile.getTags());
-        renderFacts(profile);
-        renderDescription(profile.getDescription());
-        renderThreatBox(profile.getThreatRatings());
-        renderDisposal(profile);
-
-        // The Atlas has no true threat level; it either lists the species as a pest/invasive or
-        // it does not, so the chip says exactly that rather than inventing a severity.
-        threatChip.getStyleClass().removeAll("threat-high", "threat-medium", "threat-low");
-        threatChip.setVisible(true);
-        if (profile.isInvasive()) {
-            threatChip.setText("Invasive pest");
-            threatChip.getStyleClass().add("threat-high");
-        } else {
-            threatChip.setText("No pest listing");
-            threatChip.getStyleClass().add("threat-medium");
-        }
-
-        if (profile.getImageUrl() != null) {
-            // Background loading: the placeholder shows through until the pixels arrive.
-            photoView.setImage(new Image(profile.getImageUrl(), true));
-            photoView.setVisible(true);
-        } else {
-            photoView.setImage(null);
-            photoView.setVisible(false);
-        }
-    }
-
-    // ---------------------------------------------------------------- detail sections
-
-    /** Renders the description as separate wrapped paragraphs. */
-    private void renderDescription(String description) {
-        descriptionBox.getChildren().clear();
-        if (description == null || description.isBlank()) {
-            descriptionBox.getChildren().add(paragraph("No description is available for this species."));
-            return;
-        }
-        for (String text : description.split("\\R{2,}|\\R(?=\\S)")) {
-            String trimmed = text.trim();
-            if (!trimmed.isEmpty()) {
-                descriptionBox.getChildren().add(paragraph(trimmed));
-            }
-        }
-    }
-
-    /** Shows the category chips, hiding the row entirely when there are none. */
-    private void renderTags(List<String> tags) {
-        tagsBox.getChildren().clear();
-        if (tags == null || tags.isEmpty()) {
-            tagsBox.setVisible(false);
-            return;
-        }
-        for (String tag : tags) {
-            if (tag == null || tag.isBlank()) {
-                continue;
-            }
-            Label chip = new Label(tag.trim());
-            chip.getStyleClass().add("tag-chip");
-            tagsBox.getChildren().add(chip);
-        }
-        tagsBox.setVisible(!tagsBox.getChildren().isEmpty());
-    }
-
-    /** Builds the "at a glance" fact rows, skipping whatever the data does not hold. */
-    private void renderFacts(SpeciesProfile profile) {
-        factsBox.getChildren().clear();
-        addFact("Family", profile.getFamily());
-        addFact("Order", profile.getOrder());
-        addFact("Class", profile.getTaxonClass());
-        addFact("Kingdom", profile.getKingdom());
-        addFact("Conservation status", profile.getConservationStatus());
-        addFact("Typical habitat", profile.getTypicalHabitat());
-        addFact("Size", profile.getSizeRange());
-    }
-
-    private void addFact(String name, String value) {
-        if (value == null || value.isBlank()) {
-            return;
-        }
-        HBox row = new HBox(10);
-        Label key = new Label(name);
-        key.getStyleClass().add("fact-key");
-        key.setMinWidth(150);
-        Label valueLabel = new Label(value.trim());
-        valueLabel.setWrapText(true);
-        HBox.setHgrow(valueLabel, Priority.ALWAYS);
-        row.getChildren().addAll(key, valueLabel);
-        factsBox.getChildren().add(row);
-    }
-
-    /** Threat profile bars, one per rated metric, in the standard order. */
-    private void renderThreatBox(Map<String, Integer> ratings) {
-        threatBox.getChildren().clear();
-        if (ratings == null || ratings.isEmpty()) {
-            threatBox.setVisible(false);
-            return;
-        }
-        Label title = new Label("Threat profile");
-        title.getStyleClass().add("section-title");
-        threatBox.getChildren().add(title);
-        for (String metric : THREAT_METRICS) {
-            Integer score = ratings.get(metric);
-            if (score != null) {
-                threatBox.getChildren().add(threatRow(metric, score));
-            }
-        }
-        for (Map.Entry<String, Integer> entry : ratings.entrySet()) {
-            if (!THREAT_METRICS.contains(entry.getKey())) {
-                threatBox.getChildren().add(threatRow(entry.getKey(), entry.getValue()));
-            }
-        }
-        threatBox.setVisible(true);
-    }
-
-    /** One named severity row: label, colour-coded bar and percentage. */
-    private HBox threatRow(String name, int score) {
-        int clamped = Math.max(0, Math.min(100, score));
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-        Label metric = new Label(name);
-        metric.getStyleClass().add("metric-name");
-        ProgressBar bar = new ProgressBar();
-        bar.getStyleClass().addAll("threat-bar", severityClass(clamped));
-        bar.setProgress(clamped / 100.0);
-        HBox.setHgrow(bar, Priority.ALWAYS);
-        Label percent = new Label(clamped + "%");
-        percent.getStyleClass().add("muted");
-        percent.setMinWidth(38);
-        row.getChildren().addAll(metric, bar, percent);
-        return row;
-    }
-
-    private static String severityClass(int score) {
-        if (score >= 70) {
-            return "threat-bar-high";
-        }
-        if (score >= 35) {
-            return "threat-bar-mid";
-        }
-        return "threat-bar-low";
-    }
-
-    /** Disposal guidance and report authority, shown only when the data has something to say. */
-    private void renderDisposal(SpeciesProfile profile) {
-        String guidance = profile.getDisposalGuidance();
-        if (guidance == null || guidance.isBlank()) {
-            disposalLabel.setText("");
-            disposalLabel.setVisible(false);
-        } else {
-            disposalLabel.setText(guidance.trim());
-            disposalLabel.setVisible(true);
-        }
-        String authority = profile.getReportAuthority();
-        if (authority == null || authority.isBlank()) {
-            reportAuthorityLabel.setText("");
-            reportAuthorityLabel.setVisible(false);
-        } else {
-            reportAuthorityLabel.setText("Report to: " + authority.trim());
-            reportAuthorityLabel.setVisible(true);
-        }
-    }
-
-    /** Resets every left-hand section so the screen can show its loading or empty state. */
-    private void clearDetailSections() {
-        tagsBox.getChildren().clear();
-        tagsBox.setVisible(false);
-        factsBox.getChildren().clear();
-        descriptionBox.getChildren().clear();
-        threatBox.getChildren().clear();
-        threatBox.setVisible(false);
-        disposalLabel.setText("");
-        disposalLabel.setVisible(false);
-        reportAuthorityLabel.setText("");
-        reportAuthorityLabel.setVisible(false);
-    }
-
-    // ---------------------------------------------------------------- sightings
-
-    /** Runs the occurrence search away from the FX thread. */
-    private void loadOccurrences(SpeciesSummary selection) {
-        if (activeOccurrences != null) {
-            activeOccurrences.cancel();
-        }
-        String scientificName = selection.getScientificName();
-        if (scientificName == null) {
-            alaRecordsLabel.setText("No occurrence data available.");
-            return;
-        }
-
-        Task<List<OccurrencePoint>> task = new Task<>() {
-            @Override
-            protected List<OccurrencePoint> call() {
-                return speciesService.occurrencesNear(
-                        scientificName, BRISBANE_LAT, BRISBANE_LON, SEARCH_RADIUS_KM, 300);
-            }
-        };
-        activeOccurrences = task;
-        task.setOnSucceeded(event -> {
-            if (activeOccurrences == task) {
-                renderSightings(task.getValue());
-            }
-        });
-        task.setOnFailed(event -> {
-            if (activeOccurrences == task) {
-                showSightingsUnavailable();
-            }
-        });
-
-        Thread loader = new Thread(task, "species-occurrence-loader");
-        loader.setDaemon(true);
-        loader.start();
-    }
-
-    private void renderSightings(List<OccurrencePoint> points) {
-        sightingsMap.getChildren().clear();
-        recentSightingsBox.getChildren().clear();
-
-        if (points == null || points.isEmpty()) {
-            alaRecordsLabel.setText("No Atlas records within "
-                    + (int) SEARCH_RADIUS_KM + " km of Brisbane.");
-            recentSightingsBox.getChildren().add(
-                    placeholderRow("No dated Atlas records for this species nearby."));
-            return;
-        }
-
-        int plotted = 0;
-        for (OccurrencePoint point : points) {
-            Optional<ProjectedPoint> projected =
-                    BrisbaneMapProjection.project(point.getLatitude(), point.getLongitude());
-            if (projected.isEmpty()) {
-                continue;
-            }
-            if (plotted < MAX_DOTS) {
-                sightingsMap.getChildren().add(dotFor(projected.get()));
-            }
-            plotted++;
-        }
-
-        if (plotted == 0) {
-            alaRecordsLabel.setText("No Atlas records within "
-                    + (int) SEARCH_RADIUS_KM + " km of Brisbane.");
-        } else {
-            alaRecordsLabel.setText(plotted + " Atlas " + plural(plotted, "record", "records")
-                    + " within " + (int) SEARCH_RADIUS_KM + " km of Brisbane.");
-        }
-
-        List<OccurrencePoint> recent = points.stream()
-                .filter(point -> point.getEventDate() != null)
-                .sorted(Comparator.comparing(OccurrencePoint::getEventDate).reversed())
-                .limit(3)
-                .toList();
-        if (recent.isEmpty()) {
-            recentSightingsBox.getChildren().add(
-                    placeholderRow("None of the nearby records carry a date."));
-            return;
-        }
-        for (int i = 0; i < recent.size(); i++) {
-            if (i > 0) {
-                recentSightingsBox.getChildren().add(divider());
-            }
-            recentSightingsBox.getChildren().add(recentRow(recent.get(i)));
-        }
-    }
-
-    private void showSightingsUnavailable() {
-        sightingsMap.getChildren().clear();
-        recentSightingsBox.getChildren().clear();
-        alaRecordsLabel.setText("Atlas records could not be loaded.");
-        recentSightingsBox.getChildren().add(
-                placeholderRow("Atlas records are unavailable right now."));
-    }
-
-    /** A small dot placed proportionally, so it follows the pane as it resizes. */
-    private Circle dotFor(ProjectedPoint point) {
-        Circle dot = new Circle(4);
-        dot.getStyleClass().addAll("heat-marker-circle", "blob-mid");
-        dot.centerXProperty().bind(sightingsMap.widthProperty().multiply(point.xRatio()));
-        dot.centerYProperty().bind(sightingsMap.heightProperty().multiply(point.yRatio()));
-        return dot;
-    }
-
-    private VBox recentRow(OccurrencePoint point) {
-        VBox row = new VBox(2);
-        Label dataset = new Label(point.getDataResourceName() != null
-                ? point.getDataResourceName()
-                : "Atlas record");
-        dataset.getStyleClass().add("section-title");
-        Label date = new Label(DISPLAY_DATE.format(point.getEventDate()));
-        date.getStyleClass().add("muted");
-        row.getChildren().addAll(dataset, date);
-        return row;
-    }
-
-    private Label placeholderRow(String text) {
-        Label placeholder = new Label(text);
-        placeholder.getStyleClass().add("muted");
-        placeholder.setWrapText(true);
-        return placeholder;
-    }
-
-    private Region divider() {
-        Region divider = new Region();
-        divider.getStyleClass().add("divider");
-        return divider;
-    }
-
-    // ---------------------------------------------------------------- helpers
-
-    /** A wrapped label used for one description paragraph or placeholder line. */
-    private static Label paragraph(String text) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        return label;
-    }
-
     private static String displayName(SpeciesSummary species) {
-        if (species == null) {
-            return "Unknown species";
-        }
+        if (species == null) return "Unknown species";
         if (species.getCommonName() != null && !species.getCommonName().isBlank()) {
             return species.getCommonName();
         }
         return species.getScientificName() != null ? species.getScientificName() : "Unknown species";
-    }
-
-    private static String firstNonBlank(String first, String second) {
-        return first != null && !first.isBlank() ? first : second;
-    }
-
-    private static String orBlank(String value) {
-        return value != null ? value : "";
-    }
-
-    private static String plural(int count, String singular, String plural) {
-        return count == 1 ? singular : plural;
     }
 }

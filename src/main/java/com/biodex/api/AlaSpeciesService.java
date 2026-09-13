@@ -38,6 +38,12 @@ public class AlaSpeciesService implements SpeciesService {
         return client.profile(guid);
     }
 
+    /** Image-only fetch: profile JSON plus the biocache photo fallback, no Wikipedia detour. */
+    @Override
+    public String imageUrl(String guid) {
+        return client.profileImage(guid);
+    }
+
     @Override
     public List<OccurrencePoint> occurrencesNear(
             String scientificName, double lat, double lon, double radiusKm, int limit) {

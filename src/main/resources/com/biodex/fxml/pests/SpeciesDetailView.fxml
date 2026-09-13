@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Left pane of Pest Detail: species photo, threat profile, facts, disposal guidance -->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.biodex.controller.pests.SpeciesDetailController"
+            prefWidth="800" prefHeight="700">
+
+    <center>
+        <VBox spacing="14">
+            <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
+
+            <!-- Photo + name row -->
+            <HBox spacing="16" alignment="TOP_LEFT">
+                <VBox spacing="8" alignment="TOP_CENTER">
+                    <StackPane>
+                        <Region fx:id="photoPlaceholder" prefWidth="220" prefHeight="220" styleClass="pest-photo"/>
+                        <ImageView fx:id="photoView" fitWidth="220" fitHeight="220" preserveRatio="true"/>
+                    </StackPane>
+                </VBox>
+
+                <VBox spacing="4" VBox.vgrow="ALWAYS">
+                    <Label fx:id="commonNameLabel" text="Loading..." styleClass="page-title" wrapText="true"/>
+                    <Label fx:id="scientificNameLabel" text="" styleClass="muted sci-name" wrapText="true"/>
+                    <Label fx:id="threatBadge" text="" styleClass="threat-chip threat-high" visible="false"/>
+                    <HBox fx:id="tagsBox" spacing="6" visible="false"/>
+                </VBox>
+            </HBox>
+
+            <!-- Description -->
+            <VBox fx:id="descriptionBox" spacing="6">
+                <Label text="Loading description..." styleClass="muted" wrapText="true"/>
+            </VBox>
+
+            <!-- Threat Profile -->
+            <VBox fx:id="threatBox" spacing="8" visible="false">
+                <Label text="Threat Profile" styleClass="section-title"/>
+                <VBox fx:id="threatBars" spacing="6"/>
+            </VBox>
+
+            <!-- Facts: Habitat + Size -->
+            <VBox fx:id="factsBox" spacing="8" visible="false">
+                <Label text="At a glance" styleClass="section-title"/>
+                <HBox spacing="10">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label fx:id="habitatLabel" text="" wrapText="true"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label fx:id="sizeLabel" text="" wrapText="true"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- Disposal Guidance -->
+            <Label fx:id="disposalLabel" wrapText="true" styleClass="note-warn" text="" visible="false"/>
+
+            <!-- Action buttons -->
+            <HBox spacing="10">
+                <Button fx:id="logSightingBtn" text="Log sighting" maxWidth="Infinity" onAction="#handleLogSighting" mnemonicParsing="false"/>
+                <Button fx:id="addPhotoBtn" text="Add photo" maxWidth="Infinity" onAction="#handleAddPhoto" mnemonicParsing="false"/>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>

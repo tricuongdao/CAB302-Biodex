@@ -54,6 +54,56 @@ CREATE TABLE IF NOT EXISTS sightings (
     FOREIGN KEY (suburb_id) REFERENCES suburbs (suburb_id)
 );
 
+-- Local curated species table (per pest-detail-technical-spec.md)
+-- Holds threat ratings, habitat, disposal guidance, etc. that ALA does not provide.
+CREATE TABLE IF NOT EXISTS species (
+    species_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    common_name       TEXT NOT NULL,
+    scientific_name   TEXT NOT NULL,
+    threat_level      TEXT NOT NULL,   -- LOW, MEDIUM, HIGH
+    aggression        INTEGER NOT NULL,  -- 0-100
+    sting_severity    INTEGER NOT NULL,  -- 0-100
+    spread_risk       INTEGER NOT NULL,  -- 0-100
+    typical_habitat   TEXT,
+    size_min_mm       REAL,
+    size_max_mm       REAL,
+    disposal_guidance TEXT,
+    photo_path        TEXT,
+    ala_guid          TEXT UNIQUE      -- links to Atlas of Living Australia taxon
+);
+
+CREATE TABLE IF NOT EXISTS species_tags (
+    species_id   INTEGER NOT NULL,
+    tag          TEXT NOT NULL,   -- Invasive, Stinging, Toxic, Native, etc.
+    PRIMARY KEY (species_id, tag),
+    FOREIGN KEY (species_id) REFERENCES species (species_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_species_scientific ON species (scientific_name);
+CREATE INDEX IF NOT EXISTS idx_species_common ON species (common_name);
+CREATE INDEX IF NOT EXISTS idx_species_ala_guid ON species (ala_guid);
+
+-- Local sighting reports (per pest-detail-technical-spec.md)
+-- Submitted by users, density by suburb, verification status.
+CREATE TABLE IF NOT EXISTS sighting_reports (
+    report_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    species_id       INTEGER NOT NULL,
+    suburb           TEXT NOT NULL,
+    location_label   TEXT NOT NULL,
+    latitude         REAL,
+    longitude        REAL,
+    reported_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    verified         INTEGER NOT NULL DEFAULT 0,
+    reporter_user_id INTEGER,
+    photo_path       TEXT,
+    FOREIGN KEY (species_id) REFERENCES species (species_id) ON DELETE CASCADE,
+    FOREIGN KEY (reporter_user_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_reports_species_suburb ON sighting_reports (species_id, suburb);
+CREATE INDEX IF NOT EXISTS idx_reports_species_date   ON sighting_reports (species_id, reported_at);
+CREATE INDEX IF NOT EXISTS idx_reports_suburb_date    ON sighting_reports (suburb, reported_at);
+
 CREATE TABLE IF NOT EXISTS password_reset_codes (
     code_id       INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id       INTEGER NOT NULL,

@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Speaks HTTP to the Atlas of Living Australia and maps the replies onto Biodex DTOs. Species
@@ -48,20 +49,61 @@ import java.util.Map;
 public class AlaClient {
 
     /** Applied to both connection setup and the individual request. */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+        private static final Duration TIMEOUT = Duration.ofSeconds(10);
+
+        /** Shorter timeout for fallback calls (image search, Wikipedia) so they don't dominate latency. */
+        private static final Duration FALLBACK_TIMEOUT = Duration.ofSeconds(4);
 
     /** Identifies Biodex to the Atlas, which asks callers to say who they are. */
     private static final String USER_AGENT = "Biodex/1.0 (QUT CAB302 student project)";
 
     private final HttpClient httpClient;
 
-    /** Builds a client. Opens no connection — the first request does that. */
-    public AlaClient() {
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
-    }
+        /** Builds a client. Opens no connection — the first request does that. */
+        public AlaClient() {
+            this.httpClient = HttpClient.newBuilder()
+                    .connectTimeout(TIMEOUT)
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+        }
+
+        /**
+         * Performs a request with a custom timeout, used for fallback calls that must not dominate latency.
+         */
+        private JsonObject getJsonWithTimeout(String path, Map<String, String> params, Duration timeout) {
+            URI uri = URI.create(path + queryString(params));
+            HttpRequest request = HttpRequest.newBuilder(uri)
+                    .timeout(timeout)
+                    .header("User-Agent", USER_AGENT)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response;
+            try {
+                response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (IOException e) {
+                throw new ApiException("Could not reach the Atlas of Living Australia: " + uri, e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new ApiException("Interrupted while calling the Atlas: " + uri, e);
+            }
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new ApiException(
+                        "The Atlas answered HTTP " + response.statusCode() + " for " + uri);
+            }
+
+            try {
+                JsonElement parsed = JsonParser.parseString(response.body());
+                if (!parsed.isJsonObject()) {
+                    throw new ApiException("The Atlas returned a non-object body for " + uri);
+                }
+                return parsed.getAsJsonObject();
+            } catch (JsonParseException e) {
+                throw new ApiException("The Atlas returned unreadable JSON for " + uri, e);
+            }
+        }
 
     /** Suggests taxa matching a partial name. */
     public List<SpeciesSummary> autocomplete(String query, int limit) {
@@ -82,79 +124,112 @@ public class AlaClient {
                     string(entry, "guid", "lsid"),
                     string(entry, "scientificName", "name", "nameComplete"),
                     string(entry, "commonName", "commonNameSingle"),
-                    string(entry, "imageUrl", "thumbnailUrl", "smallImageUrl")));
+                    preferThumbnail(entry)));
         }
         return List.copyOf(results);
     }
 
     /**
-     * Fetches one species profile by taxon guid.
+         * Fetches one species profile by taxon guid.
+         *
+         * <p>The profile response nests its fields, and which of them are present varies by taxon, so
+         * each value is looked for in a few places and left null when nowhere holds it.
+         */
+        public SpeciesProfile profile(String guid) {
+            String path = AlaEndpoints.SPECIES_BASE + AlaEndpoints.PROFILE_PATH + encode(guid);
+            JsonObject root = getJson(path, Map.of());
+
+            JsonObject taxonConcept = object(root, "taxonConcept");
+            String scientificName = string(taxonConcept, "nameString", "nameComplete", "scientificName");
+            String commonName = firstCommonName(root);
+            String description = description(root);
+            String image = imageUrl(root, taxonConcept);
+            boolean invasive = looksInvasive(root);
+
+            // The profile payload itself is often bare: most taxa carry neither a description nor an
+            // inlined image. A missing photo falls back to ALA's occurrence records — a taxon with
+            // even one photo-backed sighting (iNaturalist, museums, citizen science) gets an
+            // Atlas-hosted image. Description text the Atlas genuinely does not hold is filled from
+            // the species' Wikipedia summary, and a missing value stays null rather than becoming an
+            // error, exactly like every other field here.
+            //
+            // Run image and description fallbacks in parallel so we don't wait for one to finish
+            // before starting the other. Each has a short timeout so a slow fallback never blocks
+            // the profile for more than a few seconds.
+            CompletableFuture<String> imageFuture = CompletableFuture.completedFuture(image);
+            CompletableFuture<String> descriptionFuture = CompletableFuture.completedFuture(description);
+
+            if (image == null) {
+                imageFuture = CompletableFuture.supplyAsync(() -> biocacheImage(scientificName, commonName));
+            }
+            if (description == null) {
+                descriptionFuture = CompletableFuture.supplyAsync(() -> wikipediaDescription(scientificName, commonName));
+            }
+
+            String finalImage = imageFuture.join();
+            String finalDescription = descriptionFuture.join();
+
+            return new SpeciesProfile(
+                    firstNonNull(string(taxonConcept, "guid"), guid),
+                    scientificName,
+                    commonName,
+                    finalDescription,
+                    finalImage,
+                    invasive,
+                    string(taxonConcept, "family"),
+                    string(taxonConcept, "order", "orderName"),
+                    string(taxonConcept, "class", "className"),
+                    string(taxonConcept, "kingdom"),
+                    conservationStatus(root),
+                    categoryTags(root, invasive),
+                    null, null, null, null, Map.of());
+        }
+
+    /**
+     * Fetches just the photo URL for one species, skipping the Wikipedia description fallback.
      *
-     * <p>The profile response nests its fields, and which of them are present varies by taxon, so
-     * each value is looked for in a few places and left null when nowhere holds it.
+     * <p>{@link #profile(String)} can spend up to ~8 seconds on Wikipedia lookups the image
+     * caller never uses. Image enrichment calls this instead, so one card costs at most the
+     * profile request plus one short biocache fallback — and usually just the profile request.
+     * Throws {@link ApiException} exactly like {@link #profile(String)}; caching and
+     * null-handling stay with the service wrappers.
      */
-    public SpeciesProfile profile(String guid) {
+    public String profileImage(String guid) {
         String path = AlaEndpoints.SPECIES_BASE + AlaEndpoints.PROFILE_PATH + encode(guid);
         JsonObject root = getJson(path, Map.of());
 
         JsonObject taxonConcept = object(root, "taxonConcept");
-        String scientificName = string(taxonConcept, "nameString", "nameComplete", "scientificName");
-        String commonName = firstCommonName(root);
-        String description = description(root);
-        String image = imageUrl(root, taxonConcept);
-        boolean invasive = looksInvasive(root);
-
-        // The profile payload itself is often bare: most taxa carry neither a description nor an
-        // inlined image. A missing photo falls back to ALA's occurrence records — a taxon with
-        // even one photo-backed sighting (iNaturalist, museums, citizen science) gets an
-        // Atlas-hosted image. Description text the Atlas genuinely does not hold is filled from
-        // the species' Wikipedia summary, and a missing value stays null rather than becoming an
-        // error, exactly like every other field here.
-        if (image == null) {
-            image = biocacheImage(scientificName, commonName);
+        String image = thumbnailImageUrl(root, taxonConcept);
+        if (image != null) {
+            return image;
         }
-        if (description == null) {
-            description = wikipediaDescription(scientificName, commonName);
-        }
-
-        return new SpeciesProfile(
-                firstNonNull(string(taxonConcept, "guid"), guid),
-                scientificName,
-                commonName,
-                description,
-                image,
-                invasive,
-                string(taxonConcept, "family"),
-                string(taxonConcept, "order", "orderName"),
-                string(taxonConcept, "class", "className"),
-                string(taxonConcept, "kingdom"),
-                conservationStatus(root),
-                categoryTags(root, invasive),
-                null, null, null, null, Map.of());
+        return biocacheImage(
+                string(taxonConcept, "nameString", "nameComplete", "scientificName"),
+                firstCommonName(root));
     }
 
     /**
-     * Description text from the species' Wikipedia page, used when the Atlas carries none. The
-     * scientific name is tried first as the most precise, then the common name.
-     */
-    private String wikipediaDescription(String scientificName, String commonName) {
-        for (String name : nameCandidates(scientificName, commonName)) {
-            String title = wikipediaTitle(name);
-            if (title == null) {
-                continue;
-            }
-            try {
-                String text = descriptionFromSummary(
-                        getJson(AlaEndpoints.WIKIPEDIA_SUMMARY_BASE + title, Map.of()));
-                if (text != null) {
-                    return text + "\n\nSource: Wikipedia";
+         * Description text from the species' Wikipedia page, used when the Atlas carries none. The
+         * scientific name is tried first as the most precise, then the common name.
+         */
+        private String wikipediaDescription(String scientificName, String commonName) {
+            for (String name : nameCandidates(scientificName, commonName)) {
+                String title = wikipediaTitle(name);
+                if (title == null) {
+                    continue;
                 }
-            } catch (ApiException e) {
-                // No usable page under this name; the next candidate or plain null is fine.
+                try {
+                    String text = descriptionFromSummary(
+                            getJsonWithTimeout(AlaEndpoints.WIKIPEDIA_SUMMARY_BASE + title, Map.of(), FALLBACK_TIMEOUT));
+                    if (text != null) {
+                        return text + "\n\nSource: Wikipedia";
+                    }
+                } catch (ApiException e) {
+                    // No usable page under this name; the next candidate or plain null is fine.
+                }
             }
+            return null;
         }
-        return null;
-    }
 
     /**
      * A photo of the taxon from ALA's occurrence records, used when the profile payload has none.
@@ -174,28 +249,28 @@ public class AlaClient {
     }
 
     /** The first imaged occurrence record's photo URL for a name, or null when there is none. */
-    private String imagedRecordUrl(String name) {
-        try {
-            Map<String, String> params = new LinkedHashMap<>();
-            params.put("q", taxonQuery(name));
-            params.put("fq", "imageID:[* TO *]");
-            params.put("pageSize", "1");
-            JsonObject root = getJson(
-                    AlaEndpoints.BIOCACHE_BASE + AlaEndpoints.OCCURRENCE_SEARCH_PATH, params);
-            for (JsonElement element : array(root, "occurrences")) {
-                if (!element.isJsonObject()) {
-                    continue;
+        private String imagedRecordUrl(String name) {
+            try {
+                Map<String, String> params = new LinkedHashMap<>();
+                params.put("q", taxonQuery(name));
+                params.put("fq", "imageID:[* TO *]");
+                params.put("pageSize", "1");
+                JsonObject root = getJsonWithTimeout(
+                        AlaEndpoints.BIOCACHE_BASE + AlaEndpoints.OCCURRENCE_SEARCH_PATH, params, FALLBACK_TIMEOUT);
+                for (JsonElement element : array(root, "occurrences")) {
+                    if (!element.isJsonObject()) {
+                        continue;
+                    }
+                    String image = imageUrlFromRecord(element.getAsJsonObject());
+                    if (image != null) {
+                        return image;
+                    }
                 }
-                String image = imageUrlFromRecord(element.getAsJsonObject());
-                if (image != null) {
-                    return image;
-                }
+            } catch (ApiException e) {
+                // A taxon with no imaged records, or a biocache outage, is not an error worth raising.
             }
-        } catch (ApiException e) {
-            // A taxon with no imaged records, or a biocache outage, is not an error worth raising.
+            return null;
         }
-        return null;
-    }
 
     /** The names to try against Wikipedia, most precise first; the Atlas omits either freely. */
     private static List<String> nameCandidates(String scientificName, String commonName) {
@@ -235,6 +310,15 @@ public class AlaClient {
     /** The largest photo of an occurrence record, as served by the Atlas's image service. */
     static String imageUrlFromRecord(JsonObject record) {
         return string(record, "largeImageUrl", "imageUrl", "smallImageUrl", "thumbnailUrl");
+    }
+
+    /**
+     * Autocomplete image choice: thumbnails first. The card is 220x140 and the detail photo
+     * 220x220, so the small variant paints just as well and arrives much sooner than the
+     * full-size image.
+     */
+    private static String preferThumbnail(JsonObject entry) {
+        return string(entry, "thumbnailUrl", "smallImageUrl", "imageUrl");
     }
 
     /** Finds individual records within a radius of a point. */
@@ -318,41 +402,9 @@ public class AlaClient {
     // ---------------------------------------------------------------- transport
 
     /** Performs the request and parses the body, or throws {@link ApiException}. */
-    private JsonObject getJson(String path, Map<String, String> params) {
-        URI uri = URI.create(path + queryString(params));
-        HttpRequest request = HttpRequest.newBuilder(uri)
-                .timeout(TIMEOUT)
-                .header("User-Agent", USER_AGENT)
-                .header("Accept", "application/json")
-                .GET()
-                .build();
-
-        HttpResponse<String> response;
-        try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
-            // Covers both connection failures and HttpTimeoutException.
-            throw new ApiException("Could not reach the Atlas of Living Australia: " + uri, e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ApiException("Interrupted while calling the Atlas: " + uri, e);
+        private JsonObject getJson(String path, Map<String, String> params) {
+            return getJsonWithTimeout(path, params, TIMEOUT);
         }
-
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new ApiException(
-                    "The Atlas answered HTTP " + response.statusCode() + " for " + uri);
-        }
-
-        try {
-            JsonElement parsed = JsonParser.parseString(response.body());
-            if (!parsed.isJsonObject()) {
-                throw new ApiException("The Atlas returned a non-object body for " + uri);
-            }
-            return parsed.getAsJsonObject();
-        } catch (JsonParseException e) {
-            throw new ApiException("The Atlas returned unreadable JSON for " + uri, e);
-        }
-    }
 
     private static String queryString(Map<String, String> params) {
         if (params.isEmpty()) {
@@ -493,6 +545,21 @@ public class AlaClient {
             }
         }
         return string(taxonConcept, "imageUrl", "thumbnailUrl");
+    }
+
+    /** Small-variant-first pick of the same fields, for image-only fetches and cards. */
+    private static String thumbnailImageUrl(JsonObject root, JsonObject taxonConcept) {
+        for (JsonElement element : array(root, "images")) {
+            if (element.isJsonObject()) {
+                String url = string(
+                        element.getAsJsonObject(), "thumbnailUrl", "smallImageUrl", "imageUrl",
+                        "largeImageUrl");
+                if (url != null) {
+                    return url;
+                }
+            }
+        }
+        return string(taxonConcept, "thumbnailUrl", "smallImageUrl", "imageUrl");
     }
 
     /**

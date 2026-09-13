@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Right pane of Pest Detail: density cards + recent reports -->
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.biodex.controller.pests.LocalSightingsController"
+            prefWidth="400" prefHeight="700">
+
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scroll-pane">
+            <VBox spacing="14">
+                <padding><Insets top="20" right="16" bottom="20" left="16"/></padding>
+
+                <!-- Header -->
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label text="Local sightings" styleClass="screen-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="Brisbane, QLD" styleClass="muted"/>
+                </HBox>
+
+                <!-- Density cards -->
+                <VBox fx:id="densityCardContainer" spacing="8"/>
+
+                <!-- Recent reports -->
+                <VBox fx:id="recentReportsContainer" spacing="8" visible="false">
+                    <Label text="Recent reports near you" styleClass="section-title"/>
+                    <VBox fx:id="recentReportsList" spacing="6"/>
+                </VBox>
+
+                <!-- Empty state -->
+                <Label fx:id="emptyStateLabel" text="No reports in the last 30 days" styleClass="muted" wrapText="true" visible="false"/>
+
+                <!-- Open full map button -->
+                <Button fx:id="openFullMapBtn" text="Open full map" maxWidth="Infinity" onAction="#handleOpenFullMap" mnemonicParsing="false"/>
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>
