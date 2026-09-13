@@ -36,19 +36,21 @@
             <GridPane hgap="16" vgap="6">
                 <Label text="DISPLAY NAME" styleClass="field-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                 <Label text="USERNAME" styleClass="field-label" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                <TextField promptText="Alex" maxWidth="Infinity" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <TextField promptText="alexc" maxWidth="Infinity" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                <TextField fx:id="displayNameField" promptText="Alex" maxWidth="Infinity" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="usernameField" promptText="alexc" maxWidth="Infinity" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
                 <Label text="EMAIL" styleClass="field-label" GridPane.rowIndex="2" GridPane.columnIndex="0"
                        GridPane.columnSpan="2"/>
-                <TextField promptText="you@example.com" maxWidth="Infinity" GridPane.rowIndex="3"
+                <TextField fx:id="emailField" promptText="you@example.com" maxWidth="Infinity" GridPane.rowIndex="3"
                            GridPane.columnIndex="0" GridPane.columnSpan="2"/>
 
                 <Label text="PASSWORD" styleClass="field-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
                 <Label text="CONFIRM PASSWORD" styleClass="field-label" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-                <PasswordField promptText="********" maxWidth="Infinity" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-                <PasswordField promptText="********" maxWidth="Infinity" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                <PasswordField fx:id="passwordField" promptText="********" maxWidth="Infinity" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                <PasswordField fx:id="confirmPasswordField" promptText="********" maxWidth="Infinity" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
             </GridPane>
+
+            <Label fx:id="errorLabel" styleClass="error-label" visible="false" managed="false" wrapText="true"/>
 
             <!-- Live password checklist. -->
             <HBox spacing="8">
@@ -59,7 +61,7 @@
 
             <CheckBox text="My photos can appear on the closed map with my username"/>
 
-            <Button text="Create account" maxWidth="Infinity" onAction="#onCreateAccount"/>
+            <Button fx:id="createAccountButton" text="Create account" maxWidth="Infinity" onAction="#onCreateAccount"/>
 
             <HBox alignment="CENTER">
                 <Hyperlink text="Already registered? Sign in" styleClass="text-link" onAction="#onBackToLogin"/>
