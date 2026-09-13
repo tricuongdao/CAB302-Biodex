@@ -10,6 +10,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.web.WebView?>
 
 <!-- Heat map: database-backed hotspots, filters, legend and selected-area details. -->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
@@ -55,15 +56,16 @@
 
             <HBox spacing="16" VBox.vgrow="ALWAYS">
                 <StackPane styleClass="map-canvas" HBox.hgrow="ALWAYS">
+                    <WebView fx:id="basemapView" minWidth="0" minHeight="0" prefWidth="600"/>
                     <Pane fx:id="hotspotLayer" pickOnBounds="false" maxWidth="Infinity" maxHeight="Infinity"/>
 
                     <Label fx:id="emptyStateLabel" text="No saved sightings yet."
                            styleClass="map-empty-state" visible="false" managed="false"
-                           wrapText="true" maxWidth="280"/>
+                           wrapText="true" maxWidth="280" mouseTransparent="true"/>
 
-                    <ProgressIndicator fx:id="loadingIndicator" maxWidth="42" maxHeight="42"/>
+                    <ProgressIndicator fx:id="loadingIndicator" maxWidth="42" maxHeight="42" mouseTransparent="true"/>
 
-                    <VBox styleClass="card map-legend" maxWidth="210" spacing="6"
+                    <VBox styleClass="card,map-legend" maxWidth="210" maxHeight="-Infinity" mouseTransparent="true" spacing="6"
                           StackPane.alignment="BOTTOM_LEFT">
                         <StackPane.margin><Insets bottom="16" left="16"/></StackPane.margin>
                         <Label text="Sighting density" styleClass="section-title"/>
@@ -89,6 +91,11 @@
                     <Button text="Report here" maxWidth="Infinity" onAction="#onReportSighting"
                             mnemonicParsing="false"/>
                 </VBox>
+            </HBox>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label fx:id="basemapStatusLabel" text="Loading map..." styleClass="muted" wrapText="true" HBox.hgrow="ALWAYS"/>
+                <Button text="Reset map" onAction="#onResetMap" mnemonicParsing="false"/>
+                <Button text="Retry map" onAction="#onRetryMap" mnemonicParsing="false"/>
             </HBox>
         </VBox>
     </center>

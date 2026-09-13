@@ -6,10 +6,12 @@ import com.biodex.dao.SightingDAO;
 import com.biodex.model.MapSighting;
 import com.biodex.routing.Route;
 import com.biodex.util.BrisbaneMapProjection;
+import com.biodex.util.GeographicBasemap;
 import com.biodex.util.BrisbaneMapProjection.ProjectedPoint;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Point2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -17,6 +19,8 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.web.WebView;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -75,7 +79,25 @@ public class HeatMapController extends BaseController {
     @FXML
     private Button waterHyacinthButton;
 
-    private final SightingDAO sightingDAO = new SightingDAO();
+    @FXML
+    private WebView basemapView;
+
+    @FXML
+    private Label basemapStatusLabel;
+
+    private GeographicBasemap basemap;
+    private final List<Runnable> markerLayouts = new ArrayList<>();
+
+    private final SightingDAO sightingDAO;
+
+    public HeatMapController() {
+        this(new SightingDAO());
+    }
+
+    /** Allows full-screen integration checks with an isolated SQLite database. */
+    public HeatMapController(SightingDAO sightingDAO) {
+        this.sightingDAO = java.util.Objects.requireNonNull(sightingDAO);
+    }
 
     private String selectedSpecies;
     private LocalDate fromDate;
@@ -86,7 +108,28 @@ public class HeatMapController extends BaseController {
         sidebarController.setActive("heatmap");
         fromDate = LocalDate.now().minusDays(29);
         updateFilterStyles();
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(hotspotLayer.widthProperty());
+        clip.heightProperty().bind(hotspotLayer.heightProperty());
+        hotspotLayer.setClip(clip);
+        hotspotLayer.widthProperty().addListener(observable -> repositionMarkers());
+        hotspotLayer.heightProperty().addListener(observable -> repositionMarkers());
+        basemap = new GeographicBasemap(basemapView, basemapStatusLabel, this::repositionMarkers);
         loadSightings();
+    }
+
+    private void repositionMarkers() {
+        markerLayouts.forEach(Runnable::run);
+    }
+
+    @FXML
+    private void onResetMap() {
+        basemap.reset();
+    }
+
+    @FXML
+    private void onRetryMap() {
+        basemap.reload();
     }
 
     @FXML
@@ -173,6 +216,7 @@ public class HeatMapController extends BaseController {
     }
 
     private void renderSightings(List<MapSighting> sightings) {
+        markerLayouts.clear();
         hotspotLayer.getChildren().clear();
         resetDetails();
 
@@ -217,10 +261,17 @@ public class HeatMapController extends BaseController {
         marker.setManaged(false);
         marker.setPrefSize(radius * 2, radius * 2);
         marker.setMaxSize(radius * 2, radius * 2);
-        marker.layoutXProperty().bind(
-                hotspotLayer.widthProperty().multiply(key.point().xRatio()).subtract(radius));
-        marker.layoutYProperty().bind(
-                hotspotLayer.heightProperty().multiply(key.point().yRatio()).subtract(radius));
+        marker.resize(radius * 2, radius * 2); // Unmanaged overlays are sized explicitly.
+        MapSighting location = sightings.get(0);
+        Runnable position = () -> {
+            Point2D point = basemap != null && basemap.isReady()
+                    ? basemap.project(location.getLatitude(), location.getLongitude())
+                    : new Point2D(hotspotLayer.getWidth() * key.point().xRatio(),
+                            hotspotLayer.getHeight() * key.point().yRatio());
+            marker.relocate(point.getX() - radius, point.getY() - radius);
+        };
+        markerLayouts.add(position);
+        position.run();
 
         String tooltipText = key.suburbName() + " " + key.postcode() + "\n"
                 + count + " " + plural(count, "sighting", "sightings");
@@ -257,6 +308,7 @@ public class HeatMapController extends BaseController {
     }
 
     private void showLoadError() {
+        markerLayouts.clear();
         hotspotLayer.getChildren().clear();
         summaryLabel.setText("Saved sightings could not be loaded");
         emptyStateLabel.setText("Something went wrong while reading the Biodex database.");
