@@ -9,33 +9,49 @@
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="CONTROLLER_NAME"
-            prefHeight="720.0" prefWidth="1280.0">
+            prefHeight="600.0" prefWidth="800.0">
 
     <!-- main logic -->
-    <VBox alignment="CENTER" prefHeight="400" prefWidth="400">
+    <VBox alignment="CENTER" prefHeight="400" prefWidth="800" AnchorPane.topAnchor="0" AnchorPane.rightAnchor="0"
+          AnchorPane.leftAnchor="0" AnchorPane.bottomAnchor="0">
 
-        <HBox alignment="TOP_RIGHT" prefWidth="1280" prefHeight="50" style="-fx-padding: 15; -fx-background-color: #2E451D">
-            <Label text="Upload Files" style="-fx-text-fill: #CEB997; -fx-font-weight: bold;" HBox.hgrow="ALWAYS"/>
-            <ToggleButton text="Light Mode" style="-fx-font-size: 12; -fx-padding: 8;"/>
-
+        <HBox alignment="CENTER" prefWidth="800" prefHeight="50" style="-fx-padding: 15; -fx-background-color: #2E451D">
+            <Label text="Upload Files" style="-fx-text-fill: #CEB997; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ToggleButton text="Light Mode"/>
         </HBox>
 
 
         <!-- main section -->
-        <VBox spacing="30" prefHeight="200" prefWidth="200" >
-            <!-- dropdown -->
-            <VBox fx:id="dropSection" alignment="CENTER" prefHeight="250"
-            style="-fx-border-width: 2; -fx-border-style: dashed;"
-            >
-                <Label text="Drag and Drop Files"/>
+        <VBox spacing="15" prefHeight="550" prefWidth="800" style="-fx-padding: 30" AnchorPane.bottomAnchor="40"
+                AnchorPane.leftAnchor="0"
+                AnchorPane.rightAnchor="0"
+                VBox.vgrow="ALWAYS">
+
+            <!-- dropSection -->
+            <VBox fx:id="dropSection"
+                  alignment="CENTER"
+                  VBox.vgrow="ALWAYS"
+                  spacing="5"
+                  style="-fx-border-width: 2; -fx-border-color: #3D1D0D; -fx-background-color: #4F5E4B;
+                  -fx-border-style: dashed;">
+
+
+                <Label text="Drag and Drop Files" style="-fx-text-fill: #3D1D0D;"/>
                 <Label text="or"/>
-                <Button text="Click to Browse"/>
+                <Button text="Click to Browse"
+                    prefHeight="30"
+                    prefWidth="150"
+                    style="-fx-font-size: 14; -fx-padding: 10; -fx-text-fill: #CEB997;
+                    -fx-background-color: #131030; -fx-font-weight: bold; -fx-cursor: hand;"
+                />
 
             </VBox>
 
             <!-- file specs section -->
-            <VBox spacing="5">
-                <Label text="File Requirements:" style="-fx-font-weight: bold; -fx-font-size: 14"/>
+            <VBox spacing="5" style="-fx-background-color: #FFEB3B; -fx-border-radius: 5; -fx-padding: 12;
+                -fx-border-color: #3D1D0D; -fx-border-radius: 4">
+                <Label text="File Requirements:" style="-fx-font-weight: bold; -fx-font-size: 14 "/>
                 <Label text="Max File Size: 10MB"/>
                 <Label text="Accepted Format: JPEG, JPG, GIF, PNG"/>
                 <Label text="Max Files: 5"/>
