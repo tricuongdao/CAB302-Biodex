@@ -1,7 +1,6 @@
 package com.biodex.upload;
 
 import com.biodex.controller.upload.UploadController;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +8,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
-import java.io.FileOutputStream;
 
 
 // test for upload exceeding 10mb
