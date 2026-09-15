@@ -10,7 +10,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 /**
- * Handles verification of the prototype password recovery code.
+ * Handles verification of fixed password recovery code.
  */
 public class VerifyCodeController extends BaseController {
 

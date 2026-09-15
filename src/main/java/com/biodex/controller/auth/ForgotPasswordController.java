@@ -15,7 +15,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 
 /**
- * Handles password recovery requests.
+ * Starts password recovery flow. (no email is sent, uses 111111 as a fixed recovery code)
  */
 public class ForgotPasswordController extends BaseController {
 
