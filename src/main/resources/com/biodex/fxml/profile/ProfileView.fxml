@@ -63,18 +63,17 @@
                         <Label fx:id="profileVerifiedEmail" text=""/>
                         <Label text="Verified" styleClass="threat-chip threat-low"/>
                     </HBox>
-
-                    <Label text="EMAIL ADDRESS" styleClass="field-label"/>
-                    <TextField fx:id="emailField" promptText="you@example.com"/>
-                    <Button text="Save email" styleClass="primary-button" maxWidth="Infinity"
-                            mnemonicParsing="false" onAction="#onSaveEmail"/>
-                    <Label fx:id="emailStatus" wrapText="true"/>
                 </VBox>
 
                 <!-- Right: account actions. -->
                 <VBox HBox.hgrow="ALWAYS" spacing="12">
                     <VBox styleClass="card" spacing="10">
                         <Label text="Account" styleClass="section-title"/>
+                        <Label text="EMAIL" styleClass="field-label"/>
+                        <TextField fx:id="emailField" promptText="you@example.com"/>
+                        <Label fx:id="emailStatus" text="" styleClass="muted" wrapText="true"/>
+                        <Button text="Save email" maxWidth="Infinity"
+                                mnemonicParsing="false" onAction="#onSaveEmail"/>
                         <Button text="Change password" styleClass="outline-button" maxWidth="Infinity"
                             mnemonicParsing="false" onAction="#onChangePassword"/>
                         <Button text="Export my records" styleClass="outline-button" maxWidth="Infinity" mnemonicParsing="false"/>

@@ -47,24 +47,6 @@ public class UserDAO extends BaseDao {
                 UserDAO::mapRow);
     }
 
-    /** True if an account already exists with this username. */
-    public boolean usernameExists(String username) {
-        return queryOne(
-                "SELECT 1 FROM users WHERE username = ?",
-                statement -> statement.setString(1, username),
-                resultSet -> true)
-                .orElse(false);
-    }
-
-    /** True if an account already exists with this email. */
-    public boolean emailExists(String email) {
-        return queryOne(
-                "SELECT 1 FROM users WHERE email = ?",
-                statement -> statement.setString(1, email),
-                resultSet -> true)
-                .orElse(false);
-    }
-
     /**
      * Inserts a new account and stamps the generated id onto the given user. The database trigger
      * creates the matching {@code user_settings} row.
@@ -98,7 +80,7 @@ public class UserDAO extends BaseDao {
         return rows > 0;
     }
 
-    /** Replaces the stored email address for an account. */
+    /** Replaces the email address for an account. */
     public boolean updateEmail(int userId, String email) {
         int rows = update(
                 "UPDATE users SET email = ? WHERE user_id = ?",

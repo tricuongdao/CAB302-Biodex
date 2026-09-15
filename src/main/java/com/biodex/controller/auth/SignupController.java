@@ -30,6 +30,7 @@ public class SignupController extends BaseController {
 
     private final AuthService authService = new AuthService();
 
+
     @FXML
     private TextField usernameField;
 

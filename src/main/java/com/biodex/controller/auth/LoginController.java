@@ -18,6 +18,12 @@ public class LoginController extends BaseController {
     @FXML
     private PasswordField passwordField;
 
+    @FXML
+    private TextField usernameOrEmailField;
+
+    @FXML
+    private PasswordField passwordField;
+
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
@@ -27,7 +33,44 @@ public class LoginController extends BaseController {
 
     @FXML
     private void onSignIn() {
-        router.go(Route.HEAT_MAP);
+        if (usernameOrEmailField == null || passwordField == null) {
+            return;
+        }
+        new UserDAO().findByUsernameOrEmail(usernameOrEmailField.getText().trim())
+                .filter(user -> PasswordHasher.verify(passwordField.getText(), user.getPasswordHash()))
+                .ifPresent(user -> {
+                    session.setCurrentUser(user);
+                    hideError();
+
+        String email = textOf(emailField);
+        String password = passwordField.getText();
+
+        if (email.isEmpty() || password == null || password.isEmpty()) {
+            showError("Enter your email and password.");
+            return;
+        }
+
+        setBusy(true);
+
+        Task<LoginResult> task = new Task<>() {
+            @Override
+            protected LoginResult call() {
+                return authService.login(email, password);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            setBusy(false);
+            handleResult(task.getValue());
+        });
+
+        task.setOnFailed(event -> {
+            setBusy(false);
+            showError("Couldn't reach the database. Please try again.");
+        });
+
+        new Thread(task, "login-task").start();
+                });
     }
 
     @FXML

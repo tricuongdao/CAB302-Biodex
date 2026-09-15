@@ -61,8 +61,8 @@ public class ProfileController extends BaseController {
             profileEmail.setText(currentUser().getEmail());
             profileEmailDetail.setText(currentUser().getEmail());
             profileVerifiedEmail.setText(currentUser().getEmail());
+            emailField.setText(currentUser().getEmail());
             profileInitials.setText(initials(currentUser().getUsername()));
-                emailField.setText(currentUser().getEmail());
             ThemeManager.setCurrentTheme(new SettingsDAO().getSettingsForUser(
                     currentUser().getUserId()).getTheme());
         }
@@ -71,36 +71,41 @@ public class ProfileController extends BaseController {
 
     @FXML
     private void onSaveEmail() {
-        String email = emailField.getText().trim();
-        if (!Validator.isValidEmail(email)) {
-            showEmailStatus("Enter a valid email address.", true);
+        if (currentUser() == null) {
             return;
         }
 
-        if (email.equals(currentUser().getEmail())) {
-            showEmailStatus("Your email is already up to date.", false);
+        String email = emailField.getText().trim();
+        if (!Validator.isValidEmail(email)) {
+            showEmailStatus("Please enter a valid email address.", true);
+            return;
+        }
+
+        if (!email.equals(currentUser().getEmail())
+                && new UserDAO().findByEmail(email).isPresent()) {
+            showEmailStatus("That email address is already in use.", true);
             return;
         }
 
         try {
-            if (!new UserDAO().updateEmail(currentUser().getUserId(), email)) {
-                showEmailStatus("Unable to update your email.", true);
-                return;
+            if (new UserDAO().updateEmail(currentUser().getUserId(), email)) {
+                currentUser().setEmail(email);
+                profileEmail.setText(email);
+                profileEmailDetail.setText(email);
+                profileVerifiedEmail.setText(email);
+                showEmailStatus("Email updated.", false);
+            } else {
+                showEmailStatus("We could not update your email.", true);
             }
-            currentUser().setEmail(email);
-            profileEmail.setText(email);
-            profileEmailDetail.setText(email);
-            profileVerifiedEmail.setText(email);
-            showEmailStatus("Email updated.", false);
         } catch (DataAccessException exception) {
-            showEmailStatus("That email address is already in use.", true);
+            showEmailStatus("We could not update your email.", true);
         }
     }
 
     private void showEmailStatus(String message, boolean error) {
         emailStatus.setText(message);
-        emailStatus.getStyleClass().removeAll("error-label", "muted");
-        emailStatus.getStyleClass().add(error ? "error-label" : "muted");
+        emailStatus.getStyleClass().removeAll("error-label", "success-label");
+        emailStatus.getStyleClass().add(error ? "error-label" : "success-label");
     }
 
     @FXML
