@@ -42,6 +42,15 @@ public class CachedSpeciesService implements SpeciesService {
     /** Occurrence data is added to continually, so it is held for an hour. */
     private static final Duration OCCURRENCE_TTL = Duration.ofHours(1);
 
+    /**
+     * Bumped whenever a payload's shape changes, so entries written by an older build are never
+     * served to a newer one. Without this, a profile cached before the description field existed
+     * would keep hiding it for a full TTL after an upgrade. v4: profiles now carry the curated
+     * detail fields (taxonomy, tags, habitat, size, disposal guidance, threat ratings) merged by
+     * {@link CuratedSpeciesService}.
+     */
+    private static final String PAYLOAD_FORMAT = "v4";
+
     private static final Type SUMMARY_LIST = new TypeToken<List<SpeciesSummary>>() {}.getType();
     private static final Type POINT_LIST = new TypeToken<List<OccurrencePoint>>() {}.getType();
     private static final Type AREA_LIST = new TypeToken<List<AreaCount>>() {}.getType();
@@ -74,6 +83,9 @@ public class CachedSpeciesService implements SpeciesService {
     public CachedSpeciesService(SpeciesService delegate, ApiCacheDao cache) {
         this.delegate = delegate;
         this.cache = cache;
+        // Housekeeping: entries older than the longest TTL can never be served again, so they are
+        // dropped at startup rather than accumulating — including any left behind by older builds.
+        cache.deleteExpired(SPECIES_TTL);
     }
 
     @Override
@@ -94,6 +106,22 @@ public class CachedSpeciesService implements SpeciesService {
                 SPECIES_TTL,
                 SpeciesProfile.class,
                 () -> delegate.profile(guid),
+                null);
+    }
+
+    /**
+     * Image URLs get their own cache entry, separate from full profiles: image enrichment
+     * re-resolves the same handful of species on every visit, and a hit here avoids the whole
+     * profile chain. Stored under a new key namespace, so entries written by older builds are
+     * unaffected and no format bump is needed.
+     */
+    @Override
+    public String imageUrl(String guid) {
+        return cached(
+                key("species:image", guid),
+                SPECIES_TTL,
+                String.class,
+                () -> delegate.imageUrl(guid),
                 null);
     }
 
@@ -128,7 +156,7 @@ public class CachedSpeciesService implements SpeciesService {
      * @param emptyResult  what to return when the fetch fails and the cache is empty
      */
     private <T> T cached(String key, Duration ttl, Type type, Supplier<T> fetch, T emptyResult) {
-        Optional<ApiCacheDao.CacheEntry> entry = cache.get(key);
+        Optional<ApiCacheDao.CacheEntry> entry = readEntry(key);
 
         if (entry.isPresent() && !entry.get().isOlderThan(ttl)) {
             T hit = deserialise(entry.get().getPayload(), type);
@@ -141,7 +169,7 @@ public class CachedSpeciesService implements SpeciesService {
         try {
             T value = fetch.get();
             if (value != null) {
-                cache.put(key, GSON.toJson(value));
+                writeEntry(key, GSON.toJson(value));
             }
             return value;
         } catch (ApiException e) {
@@ -155,6 +183,27 @@ public class CachedSpeciesService implements SpeciesService {
         }
     }
 
+    /**
+     * Reads one cache entry. A broken cache must never break image resolution or search:
+     * on any storage failure the caller simply treats it as a miss and fetches live.
+     */
+    private Optional<ApiCacheDao.CacheEntry> readEntry(String key) {
+        try {
+            return cache.get(key);
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Stores one cache entry, swallowing storage failures so a fetched value is never lost. */
+    private void writeEntry(String key, String payload) {
+        try {
+            cache.put(key, payload);
+        } catch (RuntimeException e) {
+            // Cache is a bonus; the fetched value is still returned to the caller.
+        }
+    }
+
     /** Returns null rather than throwing when a stored payload cannot be read back. */
     private static <T> T deserialise(String payload, Type type) {
         try {
@@ -165,7 +214,7 @@ public class CachedSpeciesService implements SpeciesService {
     }
 
     private static String key(String prefix, Object... parts) {
-        StringBuilder builder = new StringBuilder(prefix);
+        StringBuilder builder = new StringBuilder(PAYLOAD_FORMAT).append(':').append(prefix);
         for (Object part : parts) {
             builder.append(':').append(part);
         }

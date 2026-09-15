@@ -24,6 +24,13 @@ public final class AlaEndpoints {
     public static final String OCCURRENCE_SEARCH_PATH = "/occurrences/search";
 
     /**
+     * Base of the Wikipedia REST summary service, used to fill in species description text the
+     * Atlas does not hold. Append a page title such as {@code Rhinella_marina}. Images never come
+     * from here — those are ALA's own.
+     */
+    public static final String WIKIPEDIA_SUMMARY_BASE = "https://en.wikipedia.org/api/rest_v1/page/summary/";
+
+    /**
      * The most records occurrence search will return for one request. Use facet counts, not raw
      * points, when a page needs coverage of a whole region.
      */

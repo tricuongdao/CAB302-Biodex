@@ -125,6 +125,32 @@
 .threat-medium { -fx-background-color: #efe5c3; -fx-text-fill: #8a6d1f; }
 .threat-low { -fx-background-color: #dfe7d2; -fx-text-fill: #4f6b3a; }
 
+/* Tag chips for a species' categories on the pest detail page. */
+.tag-chip {
+    -fx-background-color: #dfe7d2;
+    -fx-text-fill: #4f6b3a;
+    -fx-border-color: #cbd9b8;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 2 10 2 10;
+    -fx-font-size: 11px;
+}
+
+/* Small grey label for a fact row (Family, Size...) on the pest detail page. */
+.fact-key { -fx-text-fill: #8b8571; -fx-font-size: 12px; }
+
+/* Threat profile bars on the pest detail page, coloured by severity. */
+.metric-name { -fx-font-size: 12px; -fx-font-weight: bold; }
+.threat-bar .track {
+    -fx-background-color: #ece5d2;
+    -fx-background-radius: 999;
+    -fx-pref-height: 8;
+    -fx-min-height: 8;
+}
+.threat-bar-high .bar { -fx-background-color: #a8432e; -fx-background-radius: 999; }
+.threat-bar-mid .bar { -fx-background-color: #c99a2e; -fx-background-radius: 999; }
+.threat-bar-low .bar { -fx-background-color: #5d7a45; -fx-background-radius: 999; }
+
 .text-field, .password-field, .text-area {
     -fx-background-color: #fffdf6;
     -fx-text-fill: #2e2b1f;
@@ -192,6 +218,18 @@
 .blob-high { -fx-fill: rgba(168, 67, 46, 0.50); }
 .blob-mid { -fx-fill: rgba(176, 140, 60, 0.40); }
 .blob-low { -fx-fill: rgba(110, 130, 85, 0.30); }
+.heat-marker-circle { -fx-stroke: rgba(255, 255, 255, 0.80); -fx-stroke-width: 2; }
+.hotspot-marker { -fx-cursor: hand; }
+.hotspot-marker:hover { -fx-opacity: 0.82; }
+.hotspot-count { -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-font-weight: bold; }
+.map-empty-state {
+    -fx-background-color: rgba(251, 247, 236, 0.92);
+    -fx-background-radius: 10;
+    -fx-padding: 14;
+    -fx-text-fill: #5c624f;
+    -fx-alignment: center;
+}
+.map-legend { -fx-opacity: 0.94; }
 .density-bar {
     -fx-background-color: linear-gradient(to right, #dfe7d2, #e8c66a, #b0532f);
     -fx-background-radius: 999;

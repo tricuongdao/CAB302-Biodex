@@ -49,6 +49,13 @@ public final class SceneRouter {
         return currentRoute;
     }
 
+    /** Overrides the window title, e.g. to name the species currently on screen. */
+    public void setTitle(String title) {
+        if (stage != null) {
+            stage.setTitle(title);
+        }
+    }
+
     /** Loads a route into the window. */
     public void go(Route route) {
         if (stage == null) {

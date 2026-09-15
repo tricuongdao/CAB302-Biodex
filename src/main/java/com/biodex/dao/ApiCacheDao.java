@@ -37,7 +37,7 @@ public class ApiCacheDao extends BaseDao {
     }
 
     /** Looks up a cached response. Returns empty when the key has never been written. */
-    public Optional<CacheEntry> get(String key) {
+    public synchronized Optional<CacheEntry> get(String key) {
         return queryOne(
                 "SELECT payload, fetched_at FROM api_cache WHERE cache_key = ?",
                 statement -> statement.setString(1, key),
@@ -45,7 +45,7 @@ public class ApiCacheDao extends BaseDao {
     }
 
     /** Stores a response, replacing any earlier one for the same key and restamping its age. */
-    public void put(String key, String payload) {
+    public synchronized void put(String key, String payload) {
         update(
                 "INSERT INTO api_cache (cache_key, payload, fetched_at) "
                         + "VALUES (?, ?, CURRENT_TIMESTAMP) "
@@ -62,7 +62,7 @@ public class ApiCacheDao extends BaseDao {
      *
      * @return the number of entries removed
      */
-    public int deleteExpired(Duration ttl) {
+    public synchronized int deleteExpired(Duration ttl) {
         String cutoff = format(Instant.now().minus(ttl));
         return update(
                 "DELETE FROM api_cache WHERE fetched_at < ?",

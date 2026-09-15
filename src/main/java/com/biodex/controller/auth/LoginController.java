@@ -4,14 +4,12 @@ import com.biodex.controller.BaseController;
 import com.biodex.dao.UserDAO;
 import com.biodex.routing.Route;
 import com.biodex.util.PasswordHasher;
+import com.biodex.service.AuthService;
+import com.biodex.service.LoginResult;
 
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
 
-/**
- * Sign in screen. Buttons navigate only - the form accepts any input for now.
- */
 public class LoginController extends BaseController {
 
     @FXML
@@ -20,18 +18,16 @@ public class LoginController extends BaseController {
     @FXML
     private PasswordField passwordField;
 
-    /** Pretends to sign in and opens the heat map. */
+    @FXML private TextField emailField;
+    @FXML private PasswordField passwordField;
+    @FXML private Label errorLabel;
+    @FXML private Button signInButton;
+
+    private final AuthService authService = new AuthService();
+
     @FXML
     private void onSignIn() {
-        if (usernameOrEmailField == null || passwordField == null) {
-            return;
-        }
-        new UserDAO().findByUsernameOrEmail(usernameOrEmailField.getText().trim())
-                .filter(user -> PasswordHasher.verify(passwordField.getText(), user.getPasswordHash()))
-                .ifPresent(user -> {
-                    session.setCurrentUser(user);
-                    router.go(Route.HEAT_MAP);
-                });
+        router.go(Route.HEAT_MAP);
     }
 
     @FXML
@@ -42,5 +38,36 @@ public class LoginController extends BaseController {
     @FXML
     private void onForgotPassword() {
         router.go(Route.FORGOT_PASSWORD);
+    }
+
+    private void handleResult(LoginResult result) {
+        switch (result.getStatus()) {
+            case SUCCESS -> {
+                session.setCurrentUser(result.getUser());
+                router.go(Route.HEAT_MAP);
+            }
+            case INVALID_CREDENTIALS -> showError("Incorrect email or password.");
+        }
+    }
+
+    private void setBusy(boolean busy) {
+        emailField.setDisable(busy);
+        passwordField.setDisable(busy);
+        signInButton.setDisable(busy);
+    }
+
+    private void showError(String message) {
+        errorLabel.setText(message);
+        errorLabel.setVisible(true);
+        errorLabel.setManaged(true);
+    }
+
+    private void hideError() {
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+    }
+
+    private static String textOf(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
     }
 }

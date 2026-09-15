@@ -2,17 +2,17 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.web.WebView?>
 
-<!-- Heat map: full-width map canvas with density blobs, filters and a side panel. -->
+<!-- Heat map: database-backed hotspots, filters, legend and selected-area details. -->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.biodex.controller.heatmap.HeatMapController"
             prefWidth="1200" prefHeight="760">
@@ -25,43 +25,51 @@
         <VBox spacing="14">
             <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
 
-            <!-- Top bar: title, view filters, report action. -->
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <VBox spacing="2">
                     <Label text="Heat map" styleClass="screen-title"/>
-                    <Label text="1,224 sightings - showing 10 hot spots - South East QLD" styleClass="muted"/>
+                    <Label fx:id="summaryLabel" text="Loading saved sightings..." styleClass="muted"/>
                 </VBox>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="Map" styleClass="chip chip-selected" mnemonicParsing="false"/>
-                <Button text="List" styleClass="chip" mnemonicParsing="false"/>
-                <Button text="Clear filters" styleClass="ghost-button" mnemonicParsing="false"/>
+                <Button text="Map" styleClass="chip chip-selected" mouseTransparent="true"
+                        focusTraversable="false" mnemonicParsing="false"/>
+                <Button text="Clear filters" styleClass="ghost-button" onAction="#onClearFilters"
+                        mnemonicParsing="false"/>
                 <Button text="+ Report a sighting" onAction="#onReportSighting" mnemonicParsing="false"/>
             </HBox>
 
-            <!-- Filter chips row. -->
             <HBox alignment="CENTER_LEFT" spacing="8">
-                <Button text="Last 7 days" styleClass="chip chip-selected" mnemonicParsing="false"/>
-                <Button text="Last 30 days" styleClass="chip" mnemonicParsing="false"/>
-                <Button text="Amphibians" styleClass="chip" mnemonicParsing="false"/>
-                <Button text="Insects" styleClass="chip" mnemonicParsing="false"/>
-                <Button text="Flora" styleClass="chip" mnemonicParsing="false"/>
+                <Label text="DATE" styleClass="field-label"/>
+                <Button fx:id="last7DaysButton" text="Last 7 days" styleClass="chip"
+                        onAction="#onLast7Days" mnemonicParsing="false"/>
+                <Button fx:id="last30DaysButton" text="Last 30 days" styleClass="chip chip-selected"
+                        onAction="#onLast30Days" mnemonicParsing="false"/>
+                <Region prefWidth="8"/>
+                <Label text="SPECIES" styleClass="field-label"/>
+                <Button fx:id="caneToadButton" text="Cane Toad" styleClass="chip"
+                        onAction="#onCaneToad" mnemonicParsing="false"/>
+                <Button fx:id="fireAntButton" text="Fire Ant" styleClass="chip"
+                        onAction="#onFireAnt" mnemonicParsing="false"/>
+                <Button fx:id="waterHyacinthButton" text="Water Hyacinth" styleClass="chip"
+                        onAction="#onWaterHyacinth" mnemonicParsing="false"/>
             </HBox>
 
             <HBox spacing="16" VBox.vgrow="ALWAYS">
-                <!-- Stylised map area with density blobs and a legend. -->
                 <StackPane styleClass="map-canvas" HBox.hgrow="ALWAYS">
-                    <Circle radius="95" styleClass="blob-high" translateX="130" translateY="-60" mouseTransparent="true"/>
-                    <Circle radius="70" styleClass="blob-mid" translateX="-160" translateY="40" mouseTransparent="true"/>
-                    <Circle radius="55" styleClass="blob-mid" translateX="60" translateY="140" mouseTransparent="true"/>
-                    <Circle radius="45" styleClass="blob-low" translateX="-90" translateY="-130" mouseTransparent="true"/>
-                    <Circle radius="35" styleClass="blob-low" translateX="230" translateY="110" mouseTransparent="true"/>
+                    <WebView fx:id="basemapView" minWidth="0" minHeight="0" prefWidth="600"/>
+                    <Pane fx:id="hotspotLayer" pickOnBounds="false" maxWidth="Infinity" maxHeight="Infinity"/>
 
-                    <VBox styleClass="card" maxWidth="210" spacing="6" alignment="BOTTOM_LEFT">
+                    <Label fx:id="emptyStateLabel" text="No saved sightings yet."
+                           styleClass="map-empty-state" visible="false" managed="false"
+                           wrapText="true" maxWidth="280" mouseTransparent="true"/>
+
+                    <ProgressIndicator fx:id="loadingIndicator" maxWidth="42" maxHeight="42" mouseTransparent="true"/>
+
+                    <VBox styleClass="card,map-legend" maxWidth="210" maxHeight="-Infinity" mouseTransparent="true" spacing="6"
+                          StackPane.alignment="BOTTOM_LEFT">
                         <StackPane.margin><Insets bottom="16" left="16"/></StackPane.margin>
-                        <Label text="Density" styleClass="section-title"/>
-                        <HBox alignment="CENTER_LEFT" spacing="8">
-                            <Region prefWidth="120" styleClass="density-bar"/>
-                        </HBox>
+                        <Label text="Sighting density" styleClass="section-title"/>
+                        <Region prefWidth="120" styleClass="density-bar"/>
                         <HBox alignment="CENTER_LEFT" spacing="80">
                             <Label text="Low" styleClass="muted"/>
                             <Label text="High" styleClass="muted"/>
@@ -69,37 +77,25 @@
                     </VBox>
                 </StackPane>
 
-                <!-- Side panel: what has been seen near the selected spot. -->
                 <VBox prefWidth="280" minWidth="280" spacing="12">
                     <VBox styleClass="card" spacing="10">
-                        <HBox alignment="CENTER_LEFT">
-                            <Label text="Kedron Brook" styleClass="section-title"/>
-                        </HBox>
+                        <Label fx:id="selectedAreaLabel" text="Select a hot spot" styleClass="section-title"/>
                         <Label text="SPECIES FOUND HERE" styleClass="field-label"/>
-                        <HBox spacing="6">
-                            <Button text="Cane toad" styleClass="chip chip-selected" mnemonicParsing="false"/>
-                            <Button text="Fire ant" styleClass="chip" mnemonicParsing="false"/>
-                        </HBox>
-                        <Region prefHeight="4"/>
-                        <Label text="MOST RECENT" styleClass="field-label"/>
-                        <VBox spacing="2">
-                            <Label text="Cane toad" styleClass="section-title"/>
-                            <Label text="1 hour ago - Kedron Brook" styleClass="muted"/>
-                        </VBox>
+                        <Label fx:id="selectedSpeciesLabel"
+                               text="Click a numbered marker to inspect its sightings." wrapText="true"/>
+                        <Label fx:id="selectedDateLabel" styleClass="muted" wrapText="true"/>
                         <Region styleClass="divider"/>
-                        <VBox spacing="2">
-                            <Label text="Fire ant nest" styleClass="section-title"/>
-                            <Label text="2 days ago - Gordon Park" styleClass="muted"/>
-                        </VBox>
-                        <Region styleClass="divider"/>
-                        <VBox spacing="2">
-                            <Label text="Indian myna" styleClass="section-title"/>
-                            <Label text="1 week ago - Wooloowin" styleClass="muted"/>
-                        </VBox>
-                        <Hyperlink text="Show all 42 as a list" styleClass="text-link"/>
+                        <Label text="LATEST DESCRIPTION" styleClass="field-label"/>
+                        <Label fx:id="selectedDescriptionLabel" styleClass="muted" wrapText="true"/>
                     </VBox>
-                    <Button text="Report here" maxWidth="Infinity" onAction="#onReportSighting" mnemonicParsing="false"/>
+                    <Button text="Report here" maxWidth="Infinity" onAction="#onReportSighting"
+                            mnemonicParsing="false"/>
                 </VBox>
+            </HBox>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label fx:id="basemapStatusLabel" text="Loading map..." styleClass="muted" wrapText="true" HBox.hgrow="ALWAYS"/>
+                <Button text="Reset map" onAction="#onResetMap" mnemonicParsing="false"/>
+                <Button text="Retry map" onAction="#onRetryMap" mnemonicParsing="false"/>
             </HBox>
         </VBox>
     </center>
