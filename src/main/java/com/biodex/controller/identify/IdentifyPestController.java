@@ -9,6 +9,7 @@ import com.biodex.routing.Route;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
+
 /**
  * Identify a pest screen: photo upload, classifier matches and a sighting form.
  *
@@ -42,6 +44,7 @@ public class IdentifyPestController extends BaseController {
 
     /** Per the screen's own copy: 10 MB per photo. */
     private static final long MAX_PHOTO_BYTES = 10L * 1024 * 1024;
+    private static final int MAX_PHOTO = 5;
 
     /** Injected from the fx:include with fx:id="sidebar" in IdentifyPestView.fxml. */
     @FXML
@@ -63,7 +66,7 @@ public class IdentifyPestController extends BaseController {
 
     private final RecognitionService recognitionService = ServiceFactory.recognitionService();
 
-    private Path selectedPhoto;
+    private final List<Path> selectedPhotos = new ArrayList<>();
     private MatchCandidate selectedMatch;
     private final Map<MatchCandidate, Button> selectButtons = new LinkedHashMap<>();
 
@@ -79,7 +82,7 @@ public class IdentifyPestController extends BaseController {
         dropZone.setOnDragDropped(event -> {
             List<File> files = event.getDragboard().getFiles();
             if (!files.isEmpty()) {
-                handlePickedFile(files.get(0));
+                handlePickedFile(files);
             }
             event.setDropCompleted(!files.isEmpty());
             event.consume();
@@ -89,27 +92,47 @@ public class IdentifyPestController extends BaseController {
     @FXML
     private void onBrowseFiles() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Choose a pest photo");
+        chooser.setTitle("Choose a pest photo (up to five)");
         chooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Photos", "*.jpg", "*.jpeg", "*.png"));
         Window window = dropZone.getScene() == null ? null : dropZone.getScene().getWindow();
-        File file = chooser.showOpenDialog(window);
-        if (file != null) {
-            handlePickedFile(file);
+        List<File> files = chooser.showOpenMultipleDialog(window);
+        if (files != null && !files.isEmpty()) {
+            handlePickedFile(files);
         }
     }
+    public boolean uploadValidation(File file) {
+        if (file.length() > MAX_PHOTO_BYTES) {
+            showMessage("File exceed size limit. Max size is 10MB.");
+            return false;
+        }
+        if (selectedPhotos.contains(file.toPath())) {
+            showMessage("Already Selected: " + file.getName());
+            return false;
+        }
+        if (selectedPhotos.size() >= MAX_PHOTO) {
+            showMessage("Max of 5 is already selected.");
+            return false;
+        }
+        selectedPhotos.add(file.toPath());
+        return true;
+    }
+
 
     /** Validates the picked file, shows its preview and starts classification. */
-    private void handlePickedFile(File file) {
-        if (file.length() > MAX_PHOTO_BYTES) {
-            showMessage("That photo is over 10 MB - please choose a smaller one.");
-            return;
+
+    private void handlePickedFile(List<File> files) {
+        for (File file : files) {
+            if (!uploadValidation(file)) {
+                continue;
+            }
+            // file passes validation check
         }
-        selectedPhoto = file.toPath();
-        selectedMatch = null;
-        showPreview(selectedPhoto);
-        showMessage(null);
-        runRecognition(selectedPhoto);
+        if (!selectedPhotos.isEmpty()) {
+            selectedMatch = null;
+            showPreview(selectedPhotos.get(0));
+            runRecognition(selectedPhotos.get(0));
+        }
     }
 
     private void showPreview(Path photo) {
