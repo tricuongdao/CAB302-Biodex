@@ -90,6 +90,22 @@ class UserDAOTest {
     }
 
     @Test
+    void updateEmailReplacesTheStoredEmail() {
+        User user = userDAO.insert(new User("ada", "ada@example.com", "hash"));
+
+        boolean updated = userDAO.updateEmail(user.getUserId(), "ada@new.example.com");
+
+        assertTrue(updated);
+        assertEquals("ada@new.example.com",
+                userDAO.findByUsernameOrEmail("ada").orElseThrow().getEmail());
+    }
+
+    @Test
+    void updateEmailReportsWhenNoAccountMatched() {
+        assertFalse(userDAO.updateEmail(404, "new@example.com"));
+    }
+
+    @Test
     void duplicateUsernameIsRejected() {
         userDAO.insert(new User("ada", "ada@example.com", "hash"));
 

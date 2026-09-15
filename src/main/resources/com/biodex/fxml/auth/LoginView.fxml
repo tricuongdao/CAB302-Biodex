@@ -48,9 +48,9 @@
             <Region prefHeight="8"/>
 
             <Label text="EMAIL" styleClass="field-label"/>
-            <TextField promptText="you@example.com"/>
+            <TextField fx:id="usernameOrEmailField" promptText="you@example.com"/>
             <Label text="PASSWORD" styleClass="field-label"/>
-            <PasswordField promptText="********"/>
+            <PasswordField fx:id="passwordField" promptText="********"/>
 
             <HBox alignment="CENTER_LEFT" spacing="8">
                 <CheckBox text="Keep me signed in"/>

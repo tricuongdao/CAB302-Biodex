@@ -1,6 +1,7 @@
 package com.biodex.controller.common;
 
 import com.biodex.controller.BaseController;
+import com.biodex.dao.SettingsDAO;
 import com.biodex.util.ThemeManager;
 
 import javafx.fxml.FXML;
@@ -28,5 +29,9 @@ public class ThemeSwitchController extends BaseController {
     private void apply(String theme) {
         ThemeManager.setCurrentTheme(theme);
         ThemeManager.apply(lightLink.getScene(), theme);
+        if (currentUser() != null) {
+            new SettingsDAO().updateSetting(currentUser().getUserId(), SettingsDAO.SettingColumn.THEME,
+                    theme);
+        }
     }
 }

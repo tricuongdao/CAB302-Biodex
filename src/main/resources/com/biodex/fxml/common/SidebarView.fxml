@@ -32,10 +32,10 @@
     <!-- Signed-in user chip pinned to the bottom of the rail. -->
     <HBox alignment="CENTER_LEFT" spacing="10">
         <StackPane styleClass="avatar" prefWidth="34" prefHeight="34" minWidth="34" minHeight="34">
-            <Label text="JD" styleClass="avatar-initials"/>
+            <Label fx:id="userInitials" text="" styleClass="avatar-initials"/>
         </StackPane>
         <VBox spacing="1">
-            <Label text="John Citizen" styleClass="screen-title"/>
+            <Label fx:id="username" text="" styleClass="screen-title"/>
             <Label text="Brisbane QLD" styleClass="sidebar-muted"/>
         </VBox>
     </HBox>

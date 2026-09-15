@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -25,10 +26,9 @@
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <VBox spacing="2">
                     <Label text="Profile &amp; settings" styleClass="screen-title"/>
-                    <Label text="johncitizen@example.com" styleClass="muted"/>
+                    <Label fx:id="profileEmail" text="" styleClass="muted"/>
                 </VBox>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="Edit profile" styleClass="outline-button" mnemonicParsing="false"/>
             </HBox>
 
             <HBox spacing="16" VBox.vgrow="ALWAYS">
@@ -36,20 +36,23 @@
                 <VBox styleClass="card" prefWidth="420" minWidth="420" spacing="12">
                     <HBox alignment="CENTER_LEFT" spacing="12">
                         <StackPane styleClass="avatar" prefWidth="44" prefHeight="44" minWidth="44" minHeight="44">
-                            <Label text="JD" styleClass="avatar-initials"/>
+                            <Label fx:id="profileInitials" text="" styleClass="avatar-initials"/>
                         </StackPane>
                         <VBox spacing="1">
-                            <Label text="John Citizen" styleClass="section-title"/>
-                            <Label text="johncitizen@example.com" styleClass="muted"/>
+                            <Label fx:id="profileUsername" text="" styleClass="section-title"/>
+                            <Label fx:id="profileEmailDetail" text="" styleClass="muted"/>
                         </VBox>
                     </HBox>
                     <Region styleClass="divider"/>
 
                     <Label text="APPEARANCE" styleClass="field-label"/>
                     <HBox spacing="8">
-                        <Button text="Light" styleClass="chip" mnemonicParsing="false"/>
-                        <Button text="Dark" styleClass="chip" mnemonicParsing="false"/>
-                        <Button text="Auto" styleClass="chip chip-selected" mnemonicParsing="false"/>
+                        <Button fx:id="lightThemeButton" text="Light" styleClass="chip" mnemonicParsing="false"
+                            onAction="#onLightTheme"/>
+                        <Button fx:id="darkThemeButton" text="Dark" styleClass="chip" mnemonicParsing="false"
+                            onAction="#onDarkTheme"/>
+                        <Button fx:id="autoThemeButton" text="Auto" styleClass="chip" mnemonicParsing="false"
+                            onAction="#onAutoTheme"/>
                     </HBox>
 
                     <Label text="REGION" styleClass="field-label"/>
@@ -57,16 +60,23 @@
 
                     <Label text="VERIFIED EMAIL" styleClass="field-label"/>
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="johncitizen@example.com"/>
+                        <Label fx:id="profileVerifiedEmail" text=""/>
                         <Label text="Verified" styleClass="threat-chip threat-low"/>
                     </HBox>
+
+                    <Label text="EMAIL ADDRESS" styleClass="field-label"/>
+                    <TextField fx:id="emailField" promptText="you@example.com"/>
+                    <Button text="Save email" styleClass="primary-button" maxWidth="Infinity"
+                            mnemonicParsing="false" onAction="#onSaveEmail"/>
+                    <Label fx:id="emailStatus" wrapText="true"/>
                 </VBox>
 
                 <!-- Right: account actions. -->
                 <VBox HBox.hgrow="ALWAYS" spacing="12">
                     <VBox styleClass="card" spacing="10">
                         <Label text="Account" styleClass="section-title"/>
-                        <Button text="Change password" styleClass="outline-button" maxWidth="Infinity" mnemonicParsing="false"/>
+                        <Button text="Change password" styleClass="outline-button" maxWidth="Infinity"
+                            mnemonicParsing="false" onAction="#onChangePassword"/>
                         <Button text="Export my records" styleClass="outline-button" maxWidth="Infinity" mnemonicParsing="false"/>
                         <Button text="Sign out" styleClass="danger-button" maxWidth="Infinity"
                                 onAction="#onSignOut" mnemonicParsing="false"/>

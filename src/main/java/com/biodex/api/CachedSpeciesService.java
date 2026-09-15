@@ -131,7 +131,7 @@ public class CachedSpeciesService implements SpeciesService {
         Optional<ApiCacheDao.CacheEntry> entry = cache.get(key);
 
         if (entry.isPresent() && !entry.get().isOlderThan(ttl)) {
-            T hit = deserialise(entry.get().payload(), type);
+            T hit = deserialise(entry.get().getPayload(), type);
             if (hit != null) {
                 return hit;
             }
@@ -146,7 +146,7 @@ public class CachedSpeciesService implements SpeciesService {
             return value;
         } catch (ApiException e) {
             if (entry.isPresent()) {
-                T stale = deserialise(entry.get().payload(), type);
+                T stale = deserialise(entry.get().getPayload(), type);
                 if (stale != null) {
                     return stale;
                 }
