@@ -1,20 +1,20 @@
 package com.biodex.controller.auth;
 
 import com.biodex.controller.BaseController;
-import com.biodex.dao.PasswordResetDAO;
 import com.biodex.routing.Route;
 import com.biodex.session.PasswordResetSession;
 
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
 /**
- * Handles verification of the six-digit password reset code.
+ * Handles verification of the prototype password recovery code.
  */
 public class VerifyCodeController extends BaseController {
+
+    private static final String RECOVERY_CODE = "111111";
 
     @FXML
     private Label emailLabel;
@@ -28,7 +28,6 @@ public class VerifyCodeController extends BaseController {
     @FXML
     private Button verifyButton;
 
-    private final PasswordResetDAO resetDAO = new PasswordResetDAO();
     private final PasswordResetSession resetSession =
             PasswordResetSession.getInstance();
 
@@ -36,7 +35,7 @@ public class VerifyCodeController extends BaseController {
     private void initialize() {
         String email = resetSession.getEmail();
 
-        if (email == null) {
+        if (email == null || resetSession.getUserId() <= 0) {
             showError("No password reset request is active.");
             codeField.setDisable(true);
             verifyButton.setDisable(true);
@@ -53,39 +52,18 @@ public class VerifyCodeController extends BaseController {
         hideError();
 
         if (!code.matches("\\d{6}")) {
-            showError("Enter the six-digit code from your email.");
+            showError("Enter a six-digit verification code.");
             return;
         }
 
-        setBusy(true);
+        if (!RECOVERY_CODE.equals(code)) {
+            codeField.clear();
+            showError("Incorrect verification code.");
+            return;
+        }
 
-        Task<Boolean> task = new Task<>() {
-            @Override
-            protected Boolean call() {
-                return resetDAO.verifyCode(resetSession.getEmail(), code);
-            }
-        };
-
-        task.setOnSucceeded(event -> {
-            setBusy(false);
-
-            if (Boolean.TRUE.equals(task.getValue())) {
-                resetSession.setCodeVerified(true);
-                router.go(Route.RESET_PASSWORD);
-            } else {
-                codeField.clear();
-                showError("Incorrect or expired code. Please request a new code.");
-            }
-        });
-
-        task.setOnFailed(event -> {
-            setBusy(false);
-            showError("Unable to verify the code. Please try again.");
-        });
-
-        Thread thread = new Thread(task, "password-reset-code-verification");
-        thread.setDaemon(true);
-        thread.start();
+        resetSession.setCodeVerified(true);
+        router.go(Route.RESET_PASSWORD);
     }
 
     @FXML
@@ -98,11 +76,6 @@ public class VerifyCodeController extends BaseController {
     private void onBackToLogin() {
         resetSession.clear();
         router.go(Route.LOGIN);
-    }
-
-    private void setBusy(boolean busy) {
-        codeField.setDisable(busy);
-        verifyButton.setDisable(busy);
     }
 
     private void showError(String message) {
