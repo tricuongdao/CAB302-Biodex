@@ -20,7 +20,7 @@ public class SidebarController extends BaseController {
     @FXML
     private Button identifyLink;
     @FXML
-    private Button pestDetailsLink;
+    private Button speciesSearchLink;
     @FXML
     private Button profileLink;
     @FXML
@@ -64,11 +64,11 @@ public class SidebarController extends BaseController {
     public void setActive(String key) {
         Button target = switch (key) {
             case "identify" -> identifyLink;
-            case "pests" -> pestDetailsLink;
+            case "pests" -> speciesSearchLink;
             case "profile" -> profileLink;
             default -> heatMapLink;
         };
-        for (Button link : List.of(heatMapLink, identifyLink, pestDetailsLink, profileLink)) {
+        for (Button link : List.of(heatMapLink, identifyLink, speciesSearchLink, profileLink)) {
             link.getStyleClass().remove("sidebar-link-active");
         }
         target.getStyleClass().add("sidebar-link-active");
