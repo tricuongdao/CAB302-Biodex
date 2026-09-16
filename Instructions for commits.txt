@@ -1,0 +1,258 @@
+Prompt 1 — Settings persistence foundation
+Implement the first production-ready increment of the Biodex Settings feature.
+
+Context:
+- Project: Java 17, JavaFX 21, SQLite via JDBC, JUnit 5.
+- Use the existing package namespace: com.biodex.
+- Follow the settings specification in:
+  Technical Specs/settings-page-technical-spec.md
+- Do not use the specification's com.pesttracker package name.
+- Preserve existing login, signup, API, and routing behaviour.
+
+Scope:
+Create the persistence foundation for user settings.
+
+TODO:
+- Extend the existing user_settings schema to support:
+  theme, language, measurement_unit, default_suburb_id,
+  auto_identify_on_upload, identification_confidence_threshold,
+  wifi_only_upload, auto_compress_photos, max_upload_resolution,
+  notify_new_sightings_nearby, notify_community_alerts,
+  notify_app_updates, share_location_publicly, anonymize_uploads,
+  and text_size.
+- Preserve existing two_factor_enabled behaviour.
+- Keep the schema idempotent and compatible with SchemaInitialiser.
+- Extend UserSettings with strongly typed fields and safe defaults.
+- Add a SettingsDAO with:
+  getSettingsForUser(int userId)
+  updateSetting(...)
+  updateAccountSettings(...)
+- Do not concatenate arbitrary column names into SQL.
+- Implement a fixed enum or whitelist for permitted setting columns.
+- Add SuburbDAO methods needed to load suburb choices.
+- Ensure all SQL uses PreparedStatement.
+- Ensure missing settings rows are handled safely.
+- Preserve the existing default-settings trigger behaviour.
+- Add clear DataAccessException handling consistent with existing DAOs.
+
+TDD requirements:
+1. Write failing JUnit 5 tests first.
+2. Test default settings created for a new user.
+3. Test complete UserSettings mapping.
+4. Test each supported setting can be updated and read back.
+5. Test invalid setting-column names are rejected.
+6. Test user isolation: one user cannot read or update another user's settings.
+7. Test suburb lookup ordering and empty results.
+8. Implement the minimum code required to make the tests pass.
+9. Refactor only after the tests pass.
+
+Testing:
+- Reuse the existing in-memory SQLite test helpers.
+- Run the full Maven test suite with:
+  ./mvnw.cmd test
+- Do not add H2 because SQLite is already the project database and test dependency.
+
+Production-readiness requirements:
+- No plaintext passwords or secrets.
+- No raw SQL errors exposed to callers.
+- No broad exception swallowing.
+- Use transactions where an operation changes multiple related records.
+- Ensure foreign-key enforcement is enabled where required.
+- Do not change unrelated modules.
+
+Commit:
+Create one focused commit with the message:
+feat(settings): add settings persistence foundation
+Prompt 2 — Settings screen and live preferences
+Implement the second production-ready increment of the Biodex Settings feature.
+
+Context:
+- The persistence layer from the previous commit is available.
+- Use JavaFX 21 and the existing com.biodex routing/controller conventions.
+- Follow Technical Specs/settings-page-technical-spec.md.
+- The current ProfileController is static and there is no complete SettingsView.fxml.
+- Existing ThemeManager supports light and dark themes.
+
+Scope:
+Build the Settings page UI and controller for loading and editing preferences.
+
+TODO:
+- Add SettingsView.fxml under the existing profile resource package.
+- Add SettingsController under com.biodex.controller.profile.
+- Load settings for the authenticated user through SessionManager.
+- Populate controls from UserSettings.
+- Implement sections for:
+  Account display name/email,
+  Appearance,
+  Location,
+  Pest Identification,
+  Photos & Uploads,
+  Notifications,
+  Privacy & Data,
+  About.
+- Implement live theme switching through ThemeManager.
+- Add language, text-size, measurement-unit, suburb, slider, checkbox,
+  and resolution controls.
+- Add live confidence-percentage display.
+- Add validation state and inline messages for invalid email input.
+- Use background JavaFX Task/Service operations for database reads and writes.
+- Prevent duplicate writes while an asynchronous write is active.
+- Revert a control to its last known-good value when persistence fails.
+- Wire ProfileController navigation to the Settings view using existing routing patterns.
+- Add accessibleText values and maintain sensible keyboard/tab order.
+- Do not add a page-wide Save button for auto-saved preference controls.
+- Keep account profile changes on an explicit save action.
+
+TDD requirements:
+1. Start with failing tests for pure controller/helper behaviour.
+2. Test settings-to-control value conversion and control-to-setting conversion.
+3. Test theme values apply through ThemeManager.
+4. Test invalid email input prevents account persistence.
+5. Test a failed setting write restores the previous value.
+6. Test slider values are stored as 0.0–1.0 thresholds.
+7. Test the controller does not write unsupported setting names.
+8. Add JavaFX UI tests only if the existing project supports them without introducing
+   a large new dependency; otherwise keep UI logic behind testable helpers.
+9. Implement code until all new tests pass.
+
+Testing:
+- Run targeted tests first.
+- Then run:
+  ./mvnw.cmd test
+
+Production-readiness requirements:
+- Never update the database on the JavaFX Application Thread.
+- Never expose SQLException text directly in the UI.
+- Do not create unbounded threads; use the project's existing async conventions.
+- Avoid duplicated validation logic.
+- Do not break existing theme switching or authentication flows.
+- Keep FXML IDs and controller fields consistent and loadable by FXMLLoader.
+
+Commit:
+Create one focused commit with the message:
+feat(settings): add settings screen and live preferences
+Prompt 3 — Account security and destructive actions
+Implement the third production-ready increment of the Biodex Settings feature.
+
+Context:
+- Settings persistence and the Settings screen already exist.
+- Follow the Settings, Login/Signup, Forgot Password, and 2FA specifications.
+- Use existing UserDAO, PasswordHasher, Validator, SessionManager, and SceneRouter
+  implementations wherever possible.
+- Do not duplicate password validation or hashing logic.
+
+Scope:
+Complete the Account and Privacy/Data actions exposed from Settings.
+
+TODO:
+- Add an explicit Change Password flow from Settings.
+- Require the current password before accepting a new password.
+- Reuse shared password validation rules:
+  minimum 8 characters, at least one letter, and at least one number.
+- Hash the new password using the existing PasswordHasher.
+- Never log or store plaintext passwords.
+- Add display-name and email update support with validation.
+- Preserve generic error behaviour where account existence could be disclosed.
+- Implement logout through SessionManager and existing routing.
+- Implement Delete Account with a modal confirmation requiring exact text:
+  DELETE
+- Delete the authenticated user's dependent data safely using foreign keys/transactions.
+- Ensure the session is cleared only after successful deletion.
+- Prevent deletion when the confirmation text is incorrect.
+- Add clear, non-technical error messages for failed operations.
+- Ensure account operations run asynchronously and disable controls during writes.
+
+TDD requirements:
+1. Write failing unit tests before implementation.
+2. Test password validation edge cases.
+3. Test current-password rejection.
+4. Test successful password hashing and login compatibility.
+5. Test that plaintext passwords are never persisted.
+6. Test display-name and email validation.
+7. Test logout clears the session and routes to Login.
+8. Test delete-account confirmation rules.
+9. Test account deletion removes dependent settings and sightings.
+10. Test a failed deletion does not clear the session.
+11. Implement and refactor only after tests pass.
+
+Testing:
+- Reuse existing UserDAOTest, PasswordHasherTest, and ValidatorTest patterns.
+- Add transactional SQLite tests for deletion cascades.
+- Run:
+  ./mvnw.cmd test
+
+Production-readiness requirements:
+- Use a transaction for multi-table deletion.
+- Roll back on failure.
+- Do not silently ignore failed database operations.
+- Do not expose SQL, hashes, or internal exception details to users.
+- Do not modify password-reset or 2FA semantics outside the Settings integration.
+- Verify that SQLite foreign-key enforcement is enabled.
+
+Commit:
+Create one focused commit with the message:
+feat(settings): add account security and deletion controls
+Prompt 4 — Reliability, export, cache clearing, and final hardening
+Complete and harden the Biodex Settings feature for production use.
+
+Context:
+- Settings persistence, UI, account actions, and tests already exist.
+- Follow Technical Specs/settings-page-technical-spec.md.
+- Preserve the existing application architecture and avoid unrelated refactors.
+
+Scope:
+Finish the optional-but-specified data controls and production hardening.
+
+TODO:
+- Implement Export My Data for the authenticated user.
+- Export only the user's permitted data, including settings and owned sightings.
+- Use a safe user-selected file path and avoid overwriting files without confirmation.
+- Implement Clear Local Cache for disposable local data only.
+- Do not delete database records or user uploads during cache clearing.
+- Add user-visible success and failure notifications.
+- Add loading, disabled, and retry states for all settings operations.
+- Ensure settings are reloaded when the Settings page is opened.
+- Add accessibility labels and verify text-size application to the Settings screen.
+- Add validation for enum values and confidence thresholds at the DAO boundary.
+- Review all dynamic SQL and remove any remaining injection risks.
+- Add tests for export contents, path failures, cache isolation, enum validation,
+  retry behaviour, and settings reload.
+- Update directly related documentation if implementation decisions differ from
+  the technical specification.
+- Check for inconsistencies between README.md and the separate Technical Specs files.
+- Do not expand scope into cloud synchronisation, PDF export, or new authentication
+  mechanisms.
+
+TDD requirements:
+1. Begin with failing tests for export and cache-clearing services.
+2. Test that exported data belongs only to the authenticated user.
+3. Test that sensitive fields such as password hashes and verification codes are excluded.
+4. Test export failure leaves the source data unchanged.
+5. Test cache clearing removes only disposable cache entries/files.
+6. Test invalid enum values are rejected.
+7. Test settings reload reflects database changes made outside the current controller.
+8. Test failed async operations expose a recoverable error state.
+9. Implement until all tests pass.
+10. Run a final regression suite and inspect the generated package/build output.
+
+Testing:
+- Run:
+  ./mvnw.cmd test
+- Run a clean build:
+  ./mvnw.cmd clean package
+- Confirm all existing tests still pass.
+- Confirm FXML resources load successfully.
+- Confirm no new warnings or missing-resource failures are introduced.
+
+Production-readiness requirements:
+- Never export passwords, password hashes, reset codes, 2FA codes, or secrets.
+- Use deterministic UTF-8 output and a documented export format.
+- Avoid path traversal and unsafe file handling.
+- Keep cache clearing narrowly scoped.
+- Report failures explicitly; do not use silent fallbacks.
+- Keep all database writes parameterised and transactional where necessary.
+- Preserve existing login, logout, theme, and routing behaviour.
+
+Commit:
+Create one focused commit with the message:
+feat(settings): harden data controls and production readiness

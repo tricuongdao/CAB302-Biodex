@@ -48,7 +48,7 @@
             <Region prefHeight="8"/>
 
             <Label text="EMAIL" styleClass="field-label"/>
-            <TextField fx:id="emailField" promptText="you@example.com"/>
+            <TextField fx:id="usernameOrEmailField" promptText="you@example.com"/>
             <Label text="PASSWORD" styleClass="field-label"/>
             <PasswordField fx:id="passwordField" promptText="********"/>
 

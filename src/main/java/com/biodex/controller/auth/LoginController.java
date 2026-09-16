@@ -1,18 +1,28 @@
 package com.biodex.controller.auth;
 
 import com.biodex.controller.BaseController;
+import com.biodex.dao.UserDAO;
 import com.biodex.routing.Route;
+import com.biodex.util.PasswordHasher;
 import com.biodex.service.AuthService;
 import com.biodex.service.LoginResult;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
 
 public class LoginController extends BaseController {
+
+    @FXML
+    private TextField usernameOrEmailField;
+
+    @FXML
+    private PasswordField passwordField;
+
+    @FXML
+    private TextField usernameOrEmailField;
+
+    @FXML
+    private PasswordField passwordField;
 
     @FXML private TextField emailField;
     @FXML private PasswordField passwordField;
@@ -23,7 +33,14 @@ public class LoginController extends BaseController {
 
     @FXML
     private void onSignIn() {
-        hideError();
+        if (usernameOrEmailField == null || passwordField == null) {
+            return;
+        }
+        new UserDAO().findByUsernameOrEmail(usernameOrEmailField.getText().trim())
+                .filter(user -> PasswordHasher.verify(passwordField.getText(), user.getPasswordHash()))
+                .ifPresent(user -> {
+                    session.setCurrentUser(user);
+                    hideError();
 
         String email = textOf(emailField);
         String password = passwordField.getText();
@@ -53,6 +70,7 @@ public class LoginController extends BaseController {
         });
 
         new Thread(task, "login-task").start();
+                });
     }
 
     @FXML

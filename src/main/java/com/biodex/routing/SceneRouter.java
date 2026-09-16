@@ -1,6 +1,8 @@
 package com.biodex.routing;
 
 import com.biodex.util.ThemeManager;
+import com.biodex.dao.SettingsDAO;
+import com.biodex.session.SessionManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -75,11 +77,20 @@ public final class SceneRouter {
             } else {
                 scene.setRoot(root);
             }
+            applyAccountTheme();
             ThemeManager.apply(scene, ThemeManager.getCurrentTheme());
             stage.setTitle(route.getTitle());
             currentRoute = route;
         } catch (IOException e) {
             throw new IllegalStateException("Unable to load route " + route, e);
+        }
+    }
+
+    private void applyAccountTheme() {
+        if (SessionManager.getInstance().getCurrentUser() != null) {
+            String theme = new SettingsDAO().getSettingsForUser(
+                    SessionManager.getInstance().getCurrentUser().getUserId()).getTheme();
+            ThemeManager.setCurrentTheme(theme);
         }
     }
 }

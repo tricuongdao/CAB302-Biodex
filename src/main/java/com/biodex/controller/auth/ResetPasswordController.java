@@ -1,7 +1,6 @@
 package com.biodex.controller.auth;
 
 import com.biodex.controller.BaseController;
-import com.biodex.dao.PasswordResetDAO;
 import com.biodex.dao.UserDAO;
 import com.biodex.routing.Route;
 import com.biodex.session.PasswordResetSession;
@@ -36,7 +35,6 @@ public class ResetPasswordController extends BaseController {
     private ProgressIndicator progressIndicator;
 
     private final UserDAO userDAO = new UserDAO();
-    private final PasswordResetDAO resetDAO = new PasswordResetDAO();
     private final PasswordResetSession resetSession =
             PasswordResetSession.getInstance();
 
@@ -62,7 +60,8 @@ public class ResetPasswordController extends BaseController {
         hideError();
 
         if (!Validator.isStrongPassword(newPassword)) {
-            showError("Password must have at least 8 characters, including a letter and number.");
+            showError(
+                    "Password must have at least 8 characters, including a letter and number.");
             return;
         }
 
@@ -71,6 +70,8 @@ public class ResetPasswordController extends BaseController {
             return;
         }
 
+        int userId = resetSession.getUserId();
+
         setBusy(true);
 
         Task<Boolean> task = new Task<>() {
@@ -78,16 +79,7 @@ public class ResetPasswordController extends BaseController {
             protected Boolean call() {
                 String passwordHash = PasswordHasher.hash(newPassword);
 
-                boolean updated = userDAO.updatePasswordHash(
-                        resetSession.getUserId(),
-                        passwordHash);
-
-                if (updated) {
-                    resetDAO.invalidateAllCodesForUser(
-                            resetSession.getUserId());
-                }
-
-                return updated;
+                return userDAO.updatePasswordHash(userId, passwordHash);
             }
         };
 

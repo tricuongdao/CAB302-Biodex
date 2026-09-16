@@ -1,7 +1,6 @@
 package com.biodex.controller.auth;
 
 import com.biodex.controller.BaseController;
-import com.biodex.dao.PasswordResetDAO;
 import com.biodex.dao.UserDAO;
 import com.biodex.model.User;
 import com.biodex.routing.Route;
@@ -15,16 +14,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 
-import java.time.Duration;
-
 /**
- * Handles password recovery requests.
- *
- * The fixed recovery code is used only for the assessment prototype.
+ * Starts password recovery flow. (no email is sent, uses 111111 as a fixed recovery code)
  */
 public class ForgotPasswordController extends BaseController {
-
-    private static final String RECOVERY_CODE = "111111";
 
     @FXML
     private TextField emailField;
@@ -39,7 +32,6 @@ public class ForgotPasswordController extends BaseController {
     private ProgressIndicator progressIndicator;
 
     private final UserDAO userDAO = new UserDAO();
-    private final PasswordResetDAO resetDAO = new PasswordResetDAO();
     private final PasswordResetSession resetSession =
             PasswordResetSession.getInstance();
 
@@ -65,12 +57,6 @@ public class ForgotPasswordController extends BaseController {
                 if (user == null) {
                     return null;
                 }
-
-                // stores a hash of the fixed prototype code
-                resetDAO.createResetCode(
-                        user.getUserId(),
-                        RECOVERY_CODE,
-                        Duration.ofMinutes(15));
 
                 return user.getUserId();
             }
@@ -98,7 +84,7 @@ public class ForgotPasswordController extends BaseController {
             showError("Unable to start password recovery. Please try again.");
         });
 
-        Thread thread = new Thread(task, "password-reset-code-request");
+        Thread thread = new Thread(task, "password-reset-request");
         thread.setDaemon(true);
         thread.start();
     }
