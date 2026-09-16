@@ -37,4 +37,12 @@ public final class SpeciesSummary {
     public String getImageUrl() {
         return imageUrl;
     }
+
+    /** Display name for lists and breadcrumbs: common name when present, otherwise scientific. */
+    public String displayName() {
+        if (commonName != null && !commonName.isBlank()) {
+            return commonName;
+        }
+        return scientificName != null ? scientificName : "Unknown species";
+    }
 }

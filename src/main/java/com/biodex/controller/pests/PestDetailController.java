@@ -41,7 +41,7 @@ public class PestDetailController extends BaseController {
                 return;
             }
 
-            breadcrumbLabel.setText("/ " + displayName(selection));
+            breadcrumbLabel.setText("/ " + selection.displayName());
             loadLocalSpecies(selection);
         }
 
@@ -84,20 +84,13 @@ public class PestDetailController extends BaseController {
     }
 
     private void showNotInLocalDB(SpeciesSummary selection) {
-        breadcrumbLabel.setText("/ " + displayName(selection) + " (not in local DB)");
+        breadcrumbLabel.setText("/ " + selection.displayName() + " (not in local DB)");
         // Could show a placeholder in the child panes
     }
 
     @FXML
-    private void onBackToPestDetails() {
-        router.go(Route.PEST_DETAILS);
+    private void onBackToSpeciesSearch() {
+        router.go(Route.SPECIES_SEARCH);
     }
 
-    private static String displayName(SpeciesSummary species) {
-        if (species == null) return "Unknown species";
-        if (species.getCommonName() != null && !species.getCommonName().isBlank()) {
-            return species.getCommonName();
-        }
-        return species.getScientificName() != null ? species.getScientificName() : "Unknown species";
-    }
 }

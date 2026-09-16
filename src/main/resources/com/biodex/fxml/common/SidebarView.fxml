@@ -22,8 +22,8 @@
             maxWidth="Infinity" mnemonicParsing="false" onAction="#onHeatMap"/>
     <Button fx:id="identifyLink" text="Identify a pest" styleClass="sidebar-link"
             maxWidth="Infinity" mnemonicParsing="false" onAction="#onIdentifyPest"/>
-    <Button fx:id="pestDetailsLink" text="Pest details" styleClass="sidebar-link"
-            maxWidth="Infinity" mnemonicParsing="false" onAction="#onPestDetails"/>
+    <Button fx:id="speciesSearchLink" text="Species search" styleClass="sidebar-link"
+            maxWidth="Infinity" mnemonicParsing="false" onAction="#onSpeciesSearch"/>
     <Button fx:id="profileLink" text="Profile" styleClass="sidebar-link"
             maxWidth="Infinity" mnemonicParsing="false" onAction="#onProfile"/>
 

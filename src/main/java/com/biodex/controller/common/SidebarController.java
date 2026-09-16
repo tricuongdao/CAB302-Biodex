@@ -34,8 +34,8 @@ public class SidebarController extends BaseController {
     }
 
     @FXML
-    private void onPestDetails() {
-        router.go(Route.PEST_DETAILS);
+    private void onSpeciesSearch() {
+        router.go(Route.SPECIES_SEARCH);
     }
 
     @FXML
