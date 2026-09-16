@@ -1,30 +1,20 @@
 package com.biodex.controller.auth;
 
 import com.biodex.controller.BaseController;
-import com.biodex.dao.UserDAO;
 import com.biodex.routing.Route;
-import com.biodex.util.PasswordHasher;
 import com.biodex.service.AuthService;
 import com.biodex.service.LoginResult;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 
 public class LoginController extends BaseController {
 
-    @FXML
-    private TextField usernameOrEmailField;
-
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private TextField usernameOrEmailField;
-
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML private TextField emailField;
+    @FXML private TextField usernameOrEmailField;
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
     @FXML private Button signInButton;
@@ -33,20 +23,11 @@ public class LoginController extends BaseController {
 
     @FXML
     private void onSignIn() {
-        if (usernameOrEmailField == null || passwordField == null) {
-            return;
-        }
-        new UserDAO().findByUsernameOrEmail(usernameOrEmailField.getText().trim())
-                .filter(user -> PasswordHasher.verify(passwordField.getText(), user.getPasswordHash()))
-                .ifPresent(user -> {
-                    session.setCurrentUser(user);
-                    hideError();
-
-        String email = textOf(emailField);
+        String usernameOrEmail = textOf(usernameOrEmailField);
         String password = passwordField.getText();
 
-        if (email.isEmpty() || password == null || password.isEmpty()) {
-            showError("Enter your email and password.");
+        if (usernameOrEmail.isEmpty() || password == null || password.isEmpty()) {
+            showError("Enter your username or email and password.");
             return;
         }
 
@@ -55,7 +36,7 @@ public class LoginController extends BaseController {
         Task<LoginResult> task = new Task<>() {
             @Override
             protected LoginResult call() {
-                return authService.login(email, password);
+                return authService.login(usernameOrEmail, password);
             }
         };
 
@@ -70,7 +51,6 @@ public class LoginController extends BaseController {
         });
 
         new Thread(task, "login-task").start();
-                });
     }
 
     @FXML
@@ -94,7 +74,7 @@ public class LoginController extends BaseController {
     }
 
     private void setBusy(boolean busy) {
-        emailField.setDisable(busy);
+        usernameOrEmailField.setDisable(busy);
         passwordField.setDisable(busy);
         signInButton.setDisable(busy);
     }
