@@ -13,6 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <!-- Identify a pest: photo drop zone on the left, matches and sighting form on the right. -->
+<?import javafx.scene.control.ListView?>
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.biodex.controller.identify.IdentifyPestController"
             prefWidth="1200" prefHeight="760">
@@ -51,6 +52,10 @@
                         </HBox>
                         <Label fx:id="messageLabel" styleClass="muted" wrapText="true" textAlignment="CENTER"
                                maxWidth="280" visible="false" managed="false"/>
+                    </VBox>
+                    <VBox spacing="10">
+                        <Label text="Uploaded Photos" styleClass="field-label"/>
+                        <ListView fx:id="photoListView" prefHeight="100" maxWidth="Infinity"/>
                     </VBox>
                 </VBox>
 
