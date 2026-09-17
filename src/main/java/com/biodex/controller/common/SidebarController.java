@@ -7,6 +7,7 @@ import com.biodex.routing.Route;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 
 /**
  * Controller for the shared navigation rail included by every main screen.
@@ -19,9 +20,21 @@ public class SidebarController extends BaseController {
     @FXML
     private Button identifyLink;
     @FXML
-    private Button pestDetailsLink;
+    private Button speciesSearchLink;
     @FXML
     private Button profileLink;
+    @FXML
+    private Label userInitials;
+    @FXML
+    private Label username;
+
+    @FXML
+    private void initialize() {
+        if (currentUser() != null) {
+            username.setText(currentUser().getUsername());
+            userInitials.setText(initials(currentUser().getUsername()));
+        }
+    }
 
     @FXML
     private void onHeatMap() {
@@ -34,8 +47,8 @@ public class SidebarController extends BaseController {
     }
 
     @FXML
-    private void onPestDetails() {
-        router.go(Route.PEST_DETAILS);
+    private void onSpeciesSearch() {
+        router.go(Route.SPECIES_SEARCH);
     }
 
     @FXML
@@ -51,13 +64,20 @@ public class SidebarController extends BaseController {
     public void setActive(String key) {
         Button target = switch (key) {
             case "identify" -> identifyLink;
-            case "pests" -> pestDetailsLink;
+            case "pests" -> speciesSearchLink;
             case "profile" -> profileLink;
             default -> heatMapLink;
         };
-        for (Button link : List.of(heatMapLink, identifyLink, pestDetailsLink, profileLink)) {
+        for (Button link : List.of(heatMapLink, identifyLink, speciesSearchLink, profileLink)) {
             link.getStyleClass().remove("sidebar-link-active");
         }
         target.getStyleClass().add("sidebar-link-active");
+    }
+
+    private static String initials(String value) {
+        if (value == null || value.isBlank()) {
+            return "?";
+        }
+        return value.substring(0, Math.min(2, value.length())).toUpperCase();
     }
 }

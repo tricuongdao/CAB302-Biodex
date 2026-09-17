@@ -8,7 +8,7 @@
 
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="CONTROLLER_NAME"
+            fx:controller="UploadController"
             prefHeight="600.0" prefWidth="800.0">
 
     <!-- main logic -->
@@ -18,7 +18,7 @@
         <HBox alignment="CENTER" prefWidth="800" prefHeight="50" style="-fx-padding: 15; -fx-background-color: #2E451D">
             <Label text="Upload Files" style="-fx-text-fill: #CEB997; -fx-font-weight: bold;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <ToggleButton text="Light Mode"/>
+            <ToggleButton fx:id="lightModeToggle" text="Light Mode"/>
         </HBox>
 
 
@@ -33,20 +33,24 @@
                   alignment="CENTER"
                   VBox.vgrow="ALWAYS"
                   spacing="5"
-                  style="-fx-border-width: 2; -fx-border-color: #3D1D0D; -fx-background-color: #4F5E4B;
+                  style="-fx-border-width: 2; -fx-border-color: #3D1D0D; -fx-background-color: #808080;
                   -fx-border-style: dashed;">
 
 
                 <Label text="Drag and Drop Files" style="-fx-text-fill: #3D1D0D;"/>
                 <Label text="or"/>
-                <Button text="Click to Browse"
-                    prefHeight="30"
-                    prefWidth="150"
-                    style="-fx-font-size: 14; -fx-padding: 10; -fx-text-fill: #CEB997;
-                    -fx-background-color: #131030; -fx-font-weight: bold; -fx-cursor: hand;"
+                <Button fx:id="browseButton"
+                        text="Click to Browse"
+                        prefHeight="30"
+                        prefWidth="150"
+                        style="-fx-font-size: 14; -fx-padding: 10; -fx-text-fill: #CEB997;
+                        -fx-background-color: #131030; -fx-font-weight: bold; -fx-cursor: hand;"
+                        onAction="#onBrowseClick"
                 />
 
             </VBox>
+            <Label text="Selected Files:"/>
+            <ListView fx:id="uploadLabel" prefHeight="50"/>
 
             <!-- file specs section -->
             <VBox spacing="5" style="-fx-background-color: #FFEB3B; -fx-border-radius: 5; -fx-padding: 12;

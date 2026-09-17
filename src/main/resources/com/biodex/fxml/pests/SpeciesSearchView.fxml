@@ -10,9 +10,9 @@
 <?import javafx.scene.layout.TilePane?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Pest details: a live ALA species search feeding a grid of species cards. -->
+<!-- Species search: a live ALA species search feeding a grid of species cards. -->
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.biodex.controller.pests.PestDetailsController"
+            fx:controller="com.biodex.controller.pests.SpeciesSearchController"
             prefWidth="1200" prefHeight="760">
 
     <left>

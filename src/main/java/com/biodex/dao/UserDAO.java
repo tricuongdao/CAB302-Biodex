@@ -98,6 +98,17 @@ public class UserDAO extends BaseDao {
         return rows > 0;
     }
 
+    /** Replaces the email address for an account. */
+    public boolean updateEmail(int userId, String email) {
+        int rows = update(
+                "UPDATE users SET email = ? WHERE user_id = ?",
+                statement -> {
+                    statement.setString(1, email);
+                    statement.setInt(2, userId);
+                });
+        return rows > 0;
+    }
+
     private static User mapRow(ResultSet resultSet) throws SQLException {
         User user = new User();
         user.setUserId(resultSet.getInt("user_id"));

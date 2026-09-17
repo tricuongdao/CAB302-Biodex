@@ -25,7 +25,7 @@
 
             <!-- Breadcrumb back to the search page. -->
                         <HBox alignment="CENTER_LEFT" spacing="6">
-                            <Hyperlink text="Back to search" styleClass="text-link" onAction="#onBackToPestDetails"/>
+                            <Hyperlink text="Back to search" styleClass="text-link" onAction="#onBackToSpeciesSearch"/>
                             <Label fx:id="breadcrumbLabel" text="/ Loading..." styleClass="muted"/>
                         </HBox>
 

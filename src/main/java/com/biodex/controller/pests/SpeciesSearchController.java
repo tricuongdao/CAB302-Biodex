@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Species search backed by the ALA species service, with local curated species shown on startup.
  */
-public class PestDetailsController extends BaseController {
+public class SpeciesSearchController extends BaseController {
 
     /** Quiet period after the last keystroke before a search runs. */
     private static final Duration SEARCH_DEBOUNCE = Duration.millis(300);
@@ -40,7 +40,7 @@ public class PestDetailsController extends BaseController {
     /** How many suggestions one search asks the service for. */
     private static final int RESULT_LIMIT = 12;
 
-    /** Injected from the fx:include with fx:id="sidebar" in PestDetailsView.fxml. */
+    /** Injected from the fx:include with fx:id="sidebar" in SpeciesSearchView.fxml. */
     @FXML
     private SidebarController sidebarController;
     @FXML
@@ -193,7 +193,7 @@ public class PestDetailsController extends BaseController {
             cardPhotos.put(species.getGuid(), photo);
         }
 
-        Label name = new Label(displayName(species));
+        Label name = new Label(species.displayName());
         name.getStyleClass().add("section-title");
         name.setWrapText(true);
 
@@ -349,12 +349,6 @@ public class PestDetailsController extends BaseController {
         router.go(Route.PEST_DETAIL);
     }
 
-    private static String displayName(SpeciesSummary species) {
-        if (species.getCommonName() != null && !species.getCommonName().isBlank()) {
-            return species.getCommonName();
-        }
-        return species.getScientificName() != null ? species.getScientificName() : "Unknown species";
-    }
 
     private static String orBlank(String value) {
         return value != null ? value : "";

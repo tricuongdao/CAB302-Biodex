@@ -166,6 +166,7 @@
 
 /* Reserved for the first feature sprint: field validation states. */
 .error-label { -fx-text-fill: #a8432e; -fx-font-size: 12px; }
+.success-label { -fx-text-fill: #44593a; -fx-font-size: 12px; }
 .field-error { -fx-border-color: #a8432e; }
 
 /* Hyperlinks - Light/Dark/Auto switcher and inline links. */
