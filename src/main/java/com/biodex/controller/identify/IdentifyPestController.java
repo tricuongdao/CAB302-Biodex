@@ -14,11 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.errorprone.annotations.FormatMethod;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.TransferMode;
@@ -63,6 +66,10 @@ public class IdentifyPestController extends BaseController {
     private VBox matchesBox;
     @FXML
     private Label matchesPlaceholder;
+    @FXML
+    private ListView<Path> photoListView;
+
+
 
     private final RecognitionService recognitionService = ServiceFactory.recognitionService();
 
@@ -131,6 +138,7 @@ public class IdentifyPestController extends BaseController {
         if (!selectedPhotos.isEmpty()) {
             selectedMatch = null;
             showPreview(selectedPhotos.get(0));
+            updatePhotoList();
             runRecognition(selectedPhotos.get(0));
         }
     }
@@ -232,6 +240,38 @@ public class IdentifyPestController extends BaseController {
                 button.getStyleClass().add("chip-selected");
             }
         });
+    }
+
+    private void updatePhotoList() {
+        photoListView.getItems().clear();
+        photoListView.getItems().addAll(selectedPhotos);
+        photoListView.setCellFactory(param -> new PhotoListCell());
+    }
+
+    private class PhotoListCell extends ListCell<Path> {
+        @Override
+        protected void updateItem(Path photo, boolean empty) {
+            super.updateItem(photo, empty);
+            if (empty || photo == null) {
+                setGraphic(null);
+                return;
+            }
+            HBox row = new HBox(10);
+            row.setStyle("-fx-padding: 4; -fx-border-radius: 2");
+            Label filename = new Label(photo.getFileName().toString());
+            HBox.setHgrow(filename, Priority.ALWAYS);
+
+            Button removeFile = new Button("Remove");
+            removeFile.setStyle("-fx-font-size: 6;");
+            removeFile.setOnAction(event -> {
+                selectedPhotos.remove(photo);
+                updatePhotoList();
+            });
+
+            row.getChildren().addAll(filename, removeFile);
+            setGraphic(row);
+        }
+
     }
 
     @FXML
