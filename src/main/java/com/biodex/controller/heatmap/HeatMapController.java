@@ -191,6 +191,8 @@ public class HeatMapController extends BaseController {
         Task<List<MapSighting>> task = new Task<>() {
             @Override
             protected List<MapSighting> call() {
+                // Demo filler: make sure the sample suburbs and sightings exist before loading.
+                sightingDAO.seedDemoDataIfEmpty();
                 return sightingDAO.findForMap(speciesSnapshot, dateSnapshot);
             }
         };

@@ -1,10 +1,12 @@
 package com.biodex.controller.identify;
 
+import com.biodex.model.Suburb;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -20,6 +22,28 @@ class IdentifyPestControllerTest {
         assertEquals("Gordon Park", IdentifyPestController.inferSuburb("Kedron Brook, Gordon Park"));
         assertEquals("Gordon Park", IdentifyPestController.inferSuburb("   Gordon Park   "));
         assertEquals("Pullenvale", IdentifyPestController.inferSuburb("About 3 km past the creek, Pullenvale"));
+    }
+
+    @Test
+    void findSuburbByTextMatchesTheLastSegmentThenAnyContainedName() {
+        List<Suburb> suburbs = List.of(
+                suburb("Gordon Park", "4031"),
+                suburb("Kedron", "4031"),
+                suburb("West End", "4101"));
+
+        assertEquals("Gordon Park",
+                IdentifyPestController.findSuburbByText("Kedron Brook, Gordon Park", suburbs).getName());
+        assertEquals("Kedron",
+                IdentifyPestController.findSuburbByText("kedron", suburbs).getName());
+        assertEquals("West End",
+                IdentifyPestController.findSuburbByText("next to the West End ferry", suburbs).getName());
+        assertNull(IdentifyPestController.findSuburbByText("Nowhere", suburbs));
+        assertNull(IdentifyPestController.findSuburbByText(null, suburbs));
+        assertNull(IdentifyPestController.findSuburbByText("Kedron", List.of()));
+    }
+
+    private static Suburb suburb(String name, String postcode) {
+        return new Suburb(name, postcode, -27.4, 153.0);
     }
 
     @Test

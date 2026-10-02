@@ -4,10 +4,13 @@ import com.biodex.api.ServiceFactory;
 import com.biodex.api.dto.SpeciesSummary;
 import com.biodex.controller.BaseController;
 import com.biodex.controller.common.SidebarController;
+import com.biodex.dao.SightingDAO;
 import com.biodex.dao.SightingReportDAO;
 import com.biodex.dao.SpeciesDAO;
+import com.biodex.dao.SuburbDAO;
 import com.biodex.model.SightingReport;
 import com.biodex.model.Species;
+import com.biodex.model.Suburb;
 import com.biodex.model.User;
 import com.biodex.recognition.MatchCandidate;
 import com.biodex.recognition.RecognitionService;
@@ -33,6 +36,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -100,6 +104,8 @@ public class IdentifyPestController extends BaseController {
     @FXML
     private TextField whereField;
     @FXML
+    private ComboBox<Suburb> suburbCombo;
+    @FXML
     private TextField whenField;
     @FXML
     private TextField countField;
@@ -115,12 +121,17 @@ public class IdentifyPestController extends BaseController {
     private final RecognitionService recognitionService = ServiceFactory.recognitionService();
     private final SpeciesDAO speciesDAO = new SpeciesDAO();
     private final SightingReportDAO reportDAO = new SightingReportDAO();
+    private final SuburbDAO suburbDAO = new SuburbDAO();
+    private final SightingDAO sightingDAO = new SightingDAO();
 
     private final List<Path> selectedPhotos = new ArrayList<>();
     private MatchCandidate selectedMatch;
 
     /** Species pinned by a Species Details hand-off, used when no match has been picked. */
     private SpeciesSummary contextSpecies;
+
+    /** Suburb picker options, loaded off the FX thread on arrival; empty until the load finishes. */
+    private List<Suburb> suburbOptions = List.of();
 
     /** The species of the last filed report, for the "view local sightings" link. */
     private SpeciesSummary reportedSpecies;
@@ -146,6 +157,25 @@ public class IdentifyPestController extends BaseController {
             event.consume();
         });
         applyDraft(IdentifyDraft.getInstance().take());
+        loadSuburbs();
+    }
+
+    /** Loads the suburb picker options off the FX thread; empty until the load finishes. */
+    private void loadSuburbs() {
+        Task<List<Suburb>> task = new Task<>() {
+            @Override
+            protected List<Suburb> call() {
+                return suburbDAO.findAll();
+            }
+        };
+        task.setOnSucceeded(event -> {
+            List<Suburb> loaded = task.getValue();
+            suburbOptions = loaded == null ? List.of() : loaded;
+            suburbCombo.getItems().setAll(suburbOptions);
+        });
+        Thread thread = new Thread(task, "suburb-loader");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /** Applies a hand-off from Species Details: pins the species and preloads any photo. */
@@ -372,6 +402,11 @@ public class IdentifyPestController extends BaseController {
                 return;
             }
         }
+        Suburb suburb = resolveSuburb(where);
+        if (suburb == null && !suburbOptions.isEmpty()) {
+            showReportMessage("Pick the suburb from the list, or name it in Where, so the sighting can be placed on the heat map.");
+            return;
+        }
         User user = currentUser();
         if (user == null) {
             showReportMessage("Sign in first so the sighting can be attributed to your account.");
@@ -379,33 +414,40 @@ public class IdentifyPestController extends BaseController {
         }
 
         SightingReport report = new SightingReport();
-        report.setSuburb(inferSuburb(where));
+        report.setSuburb(suburb != null ? suburb.getName() : inferSuburb(where));
         report.setLocationLabel(locationLabel(where, text(countField), text(notesField)));
         report.setReporterUserId(user.getUserId());
         report.setPhotoPath(selectedPhotos.isEmpty() ? null : selectedPhotos.get(0).toString());
         report.setReportedAt(when);
 
         beginSubmitting();
-        Task<Optional<Species>> task = new Task<>() {
+        Task<Optional<FiledReport>> task = new Task<>() {
             @Override
-            protected Optional<Species> call() {
+            protected Optional<FiledReport> call() {
                 Species species = resolveSpecies(target);
                 if (species == null) {
                     return Optional.empty();
                 }
                 report.setSpeciesId(species.getSpeciesId());
                 reportDAO.insertReport(report);
-                return Optional.of(species);
+                boolean placedOnMap = false;
+                if (suburb != null) {
+                    sightingDAO.insertSighting(user.getUserId(), suburb.getSuburbId(),
+                            species.getCommonName(), report.getLocationLabel(),
+                            report.getPhotoPath(), report.getReportedAt());
+                    placedOnMap = true;
+                }
+                return Optional.of(new FiledReport(species, placedOnMap));
             }
         };
         task.setOnSucceeded(event -> {
             endSubmitting();
-            Optional<Species> species = task.getValue();
-            if (species.isEmpty()) {
+            Optional<FiledReport> filed = task.getValue();
+            if (filed.isEmpty()) {
                 showReportMessage("That species isn't in the local database yet, so the report can't be filed. Try another match.");
                 return;
             }
-            onReportFiled(species.get());
+            onReportFiled(filed.get());
         });
         task.setOnFailed(event -> {
             endSubmitting();
@@ -442,12 +484,57 @@ public class IdentifyPestController extends BaseController {
         return null;
     }
 
-    private void onReportFiled(Species species) {
+    /** The suburb for the report: an explicit pick wins, then a match against the typed text. */
+    private Suburb resolveSuburb(String where) {
+        Suburb chosen = suburbCombo.getValue();
+        if (chosen != null) {
+            return chosen;
+        }
+        return findSuburbByText(where, suburbOptions);
+    }
+
+    /**
+     * Matches free text against the known suburbs: an exact match on the last comma segment or
+     * the whole text first, then the longest suburb name contained in the text.
+     */
+    static Suburb findSuburbByText(String where, List<Suburb> suburbs) {
+        if (where == null || where.isBlank() || suburbs == null || suburbs.isEmpty()) {
+            return null;
+        }
+        String text = where.trim().toLowerCase(Locale.ROOT);
+        String tail = text;
+        int comma = text.lastIndexOf(',');
+        if (comma >= 0) {
+            tail = text.substring(comma + 1).trim();
+        }
+        for (Suburb suburb : suburbs) {
+            String name = suburb.getName().toLowerCase(Locale.ROOT);
+            if (name.equals(tail) || name.equals(text)) {
+                return suburb;
+            }
+        }
+        Suburb best = null;
+        for (Suburb suburb : suburbs) {
+            String name = suburb.getName().toLowerCase(Locale.ROOT);
+            if (text.contains(name) && (best == null || name.length() > best.getName().length())) {
+                best = suburb;
+            }
+        }
+        return best;
+    }
+
+    /** Outcome of a filed report: the species it was about, and whether it reached the heat map. */
+    private record FiledReport(Species species, boolean placedOnMap) {
+    }
+
+    private void onReportFiled(FiledReport filed) {
+        Species species = filed.species();
         reportedSpecies = new SpeciesSummary(
                 species.getAlaGuid(), species.getScientificName(),
                 species.getCommonName(), species.getPhotoPath());
         showReportMessage("Report filed. It now shows under Local sightings for "
-                + species.getCommonName() + ".");
+                + species.getCommonName()
+                + (filed.placedOnMap() ? " and on the heat map." : "."));
         viewSightingsLink.setVisible(true);
         viewSightingsLink.setManaged(true);
     }
