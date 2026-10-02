@@ -11,6 +11,8 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 
 <!-- Sign in: dark green brand panel on the left, form on the cream page. -->
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
@@ -67,6 +69,15 @@
                 <Label text="or" styleClass="muted"/>
                 <Region prefWidth="80" styleClass="divider"/>
             </HBox>
+
+            <Button fx:id="googleSignInButton" styleClass="google-btn" maxWidth="Infinity"
+                    mnemonicParsing="false" onAction="#onGoogleSignIn">
+                <graphic>
+                    <ImageView fitHeight="36" preserveRatio="true">
+                        <Image url="@/com/biodex/images/google-signin.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
 
             <Button text="Create an account" styleClass="outline-button" maxWidth="Infinity"
                     mnemonicParsing="false" onAction="#onCreateAccount"/>

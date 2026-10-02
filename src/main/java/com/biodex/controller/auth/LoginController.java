@@ -18,6 +18,7 @@ public class LoginController extends BaseController {
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
     @FXML private Button signInButton;
+    @FXML private Button googleSignInButton;
 
     private final AuthService authService = new AuthService();
 
@@ -61,6 +62,11 @@ public class LoginController extends BaseController {
     @FXML
     private void onForgotPassword() {
         router.go(Route.FORGOT_PASSWORD);
+    }
+
+    @FXML
+    private void onGoogleSignIn() {
+        // Button for cosmetics
     }
 
     private void handleResult(LoginResult result) {
