@@ -90,7 +90,7 @@ public final class SpeciesImageResolver {
         if (scientificName == null || scientificName.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }
-        String normalised = scientificName.trim().toLowerCase(Locale.ROOT);
+        String normalised = normaliseName(scientificName);
         String knownGuid = guidByScientificName.get(normalised);
         if (knownGuid != null) {
             return imageForGuid(knownGuid);
@@ -107,7 +107,7 @@ public final class SpeciesImageResolver {
 
     /** One autocomplete finds the real taxon; its image then comes from the guid cache. */
     private String resolveByScientificName(String scientificName) {
-        String wanted = scientificName.toLowerCase(Locale.ROOT);
+        String wanted = normaliseName(scientificName);
         java.util.List<com.biodex.api.dto.SpeciesSummary> matches;
         try {
             matches = speciesService.autocomplete(scientificName, 5);
@@ -124,8 +124,12 @@ public final class SpeciesImageResolver {
                     || match.getGuid().startsWith("fake:")) {
                 continue;
             }
-            boolean nameOk = (match.getScientificName() != null
-                        && match.getScientificName().toLowerCase(Locale.ROOT).contains(wanted))
+            // Some Atlas names carry a subgenus in brackets ("Manorina (Myzantha) melanocephala"
+            // for the noisy miner); both sides drop brackets before comparing, so the local
+            // record's plain name still finds its taxon.
+            String candidate = match.getScientificName() == null
+                    ? null : normaliseName(match.getScientificName());
+            boolean nameOk = (candidate != null && candidate.contains(wanted))
                     || (match.getCommonName() != null
                         && match.getCommonName().equalsIgnoreCase(scientificName));
             if (!nameOk) {
@@ -134,8 +138,7 @@ public final class SpeciesImageResolver {
             if (fallback == null) {
                 fallback = match;
             }
-            if (match.getScientificName() != null
-                    && match.getScientificName().trim().equalsIgnoreCase(scientificName)) {
+            if (wanted.equals(candidate)) {
                 exact = match;
                 break;
             }
@@ -156,5 +159,16 @@ public final class SpeciesImageResolver {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * Lower-cased comparison form of a scientific name with any bracketed subgenus removed:
+     * "Manorina (Myzantha) melanocephala" becomes "manorina melanocephala". The Atlas mixes the
+     * two styles freely for the same taxon, so both sides are normalised before comparing.
+     * Package-private so the test can pin the behaviour.
+     */
+    static String normaliseName(String name) {
+        return name.replaceAll("\\([^)]*\\)", " ").replaceAll("\\s+", " ").trim()
+                .toLowerCase(Locale.ROOT);
     }
 }
