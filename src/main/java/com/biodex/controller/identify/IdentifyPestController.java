@@ -21,7 +21,8 @@ import com.biodex.session.SpeciesSelection;
 import java.io.File;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -31,12 +32,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DateCell;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -53,6 +59,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import javafx.util.StringConverter;
 
 
 /**
@@ -76,9 +83,9 @@ public class IdentifyPestController extends BaseController {
     private static final long MAX_PHOTO_BYTES = 10L * 1024 * 1024;
     private static final int MAX_PHOTO = 5;
 
-    /** Shape the WHEN field accepts, e.g. "27 Aug 2026, 16:40". */
-    static final DateTimeFormatter WHEN_FORMAT =
-            DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm", Locale.ENGLISH);
+    /** How the date picker shows a chosen day, e.g. "27 Aug 2026". */
+    static final DateTimeFormatter DATE_DISPLAY =
+            DateTimeFormatter.ofPattern("d MMM uuuu", Locale.ENGLISH);
 
     /** Injected from the fx:include with fx:id="sidebar" in IdentifyPestView.fxml. */
     @FXML
@@ -106,9 +113,11 @@ public class IdentifyPestController extends BaseController {
     @FXML
     private ComboBox<Suburb> suburbCombo;
     @FXML
-    private TextField whenField;
+    private DatePicker whenDatePicker;
     @FXML
-    private TextField countField;
+    private ComboBox<LocalTime> whenTimeCombo;
+    @FXML
+    private ComboBox<String> countCombo;
     @FXML
     private TextArea notesField;
     @FXML
@@ -133,6 +142,9 @@ public class IdentifyPestController extends BaseController {
     /** Suburb picker options, loaded off the FX thread on arrival; empty until the load finishes. */
     private List<Suburb> suburbOptions = List.of();
 
+    /** True while the suburb filter rewrites the item list, to avoid listener feedback loops. */
+    private boolean suburbFiltering;
+
     /** The species of the last filed report, for the "view local sightings" link. */
     private SpeciesSummary reportedSpecies;
 
@@ -156,6 +168,7 @@ public class IdentifyPestController extends BaseController {
             event.setDropCompleted(!files.isEmpty());
             event.consume();
         });
+        wireSightingForm();
         applyDraft(IdentifyDraft.getInstance().take());
         loadSuburbs();
     }
@@ -176,6 +189,77 @@ public class IdentifyPestController extends BaseController {
         Thread thread = new Thread(task, "suburb-loader");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /** Sets up the calendar and the count/time pickers, and makes the suburb box typeable. */
+    private void wireSightingForm() {
+        whenDatePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setDisable(empty || date.isAfter(LocalDate.now()));
+            }
+        });
+        whenDatePicker.setConverter(new StringConverter<LocalDate>() {
+            @Override
+            public String toString(LocalDate date) {
+                return date == null ? "" : DATE_DISPLAY.format(date);
+            }
+
+            @Override
+            public LocalDate fromString(String text) {
+                if (text == null || text.isBlank()) {
+                    return null;
+                }
+                String value = text.trim();
+                try {
+                    return LocalDate.parse(value, DATE_DISPLAY);
+                } catch (DateTimeParseException notDisplayFormat) {
+                    try {
+                        return LocalDate.parse(value);
+                    } catch (DateTimeParseException alsoNotIso) {
+                        return null;
+                    }
+                }
+            }
+        });
+
+        whenTimeCombo.getItems().setAll(timeSlots());
+        countCombo.getItems().setAll("1", "2", "3", "4", "5", "6-10", "11-25", "25+");
+
+        suburbCombo.setEditable(true);
+        suburbCombo.getEditor().textProperty().addListener((observable, oldText, newText) -> {
+            if (suburbFiltering || newText == null || !suburbCombo.isFocused()) {
+                return;
+            }
+            Suburb selected = suburbCombo.getValue();
+            if (selected != null && selected.toString().equals(newText)) {
+                return;
+            }
+            String query = newText.trim().toLowerCase(Locale.ROOT);
+            List<Suburb> matches = suburbOptions.stream()
+                    .filter(suburb -> suburb.toString().toLowerCase(Locale.ROOT).contains(query))
+                    .collect(Collectors.toList());
+            Platform.runLater(() -> {
+                suburbFiltering = true;
+                suburbCombo.setItems(FXCollections.observableArrayList(matches));
+                suburbCombo.getEditor().setText(newText);
+                suburbCombo.getEditor().positionCaret(newText.length());
+                suburbFiltering = false;
+            });
+            if (!matches.isEmpty()) {
+                suburbCombo.show();
+            }
+        });
+    }
+
+    /** Half-hour slots from midnight to 11:30pm for the time picker. */
+    private static List<LocalTime> timeSlots() {
+        List<LocalTime> slots = new ArrayList<>();
+        for (int minutes = 0; minutes < 24 * 60; minutes += 30) {
+            slots.add(LocalTime.of(minutes / 60, minutes % 60));
+        }
+        return slots;
     }
 
     /** Applies a hand-off from Species Details: pins the species and preloads any photo. */
@@ -393,14 +477,12 @@ public class IdentifyPestController extends BaseController {
             showReportMessage("Add where you found it - a suburb or a nearby landmark.");
             return;
         }
-        String whenText = text(whenField);
-        Instant when = null;
-        if (!whenText.isEmpty()) {
-            when = parseWhen(whenText);
-            if (when == null) {
-                showReportMessage("Couldn't read the date and time - try a format like \"27 Aug 2026, 16:40\".");
-                return;
-            }
+        LocalDate whenDate = whenDatePicker.getValue();
+        LocalTime whenTime = whenTimeCombo.getValue();
+        Instant when = combineWhen(whenDate, whenTime);
+        if (when != null && when.isAfter(Instant.now().plusSeconds(120))) {
+            showReportMessage("The date and time can't be in the future - pick when you actually saw it.");
+            return;
         }
         Suburb suburb = resolveSuburb(where);
         if (suburb == null && !suburbOptions.isEmpty()) {
@@ -415,7 +497,7 @@ public class IdentifyPestController extends BaseController {
 
         SightingReport report = new SightingReport();
         report.setSuburb(suburb != null ? suburb.getName() : inferSuburb(where));
-        report.setLocationLabel(locationLabel(where, text(countField), text(notesField)));
+        report.setLocationLabel(locationLabel(where, countValue(), text(notesField)));
         report.setReporterUserId(user.getUserId());
         report.setPhotoPath(selectedPhotos.isEmpty() ? null : selectedPhotos.get(0).toString());
         report.setReportedAt(when);
@@ -484,8 +566,15 @@ public class IdentifyPestController extends BaseController {
         return null;
     }
 
-    /** The suburb for the report: an explicit pick wins, then a match against the typed text. */
+    /**
+     * The suburb for the report: whatever is typed or chosen in the suburb box wins, then a
+     * match against the Where text as a last resort.
+     */
     private Suburb resolveSuburb(String where) {
+        Suburb typed = findSuburbByText(suburbCombo.getEditor().getText(), suburbOptions);
+        if (typed != null) {
+            return typed;
+        }
         Suburb chosen = suburbCombo.getValue();
         if (chosen != null) {
             return chosen;
@@ -495,7 +584,8 @@ public class IdentifyPestController extends BaseController {
 
     /**
      * Matches free text against the known suburbs: an exact match on the last comma segment or
-     * the whole text first, then the longest suburb name contained in the text.
+     * the whole text first, then the longest suburb name contained in the text, then the first
+     * suburb the text is a prefix of (so typing "gord" finds Gordon Park).
      */
     static Suburb findSuburbByText(String where, List<Suburb> suburbs) {
         if (where == null || where.isBlank() || suburbs == null || suburbs.isEmpty()) {
@@ -520,7 +610,17 @@ public class IdentifyPestController extends BaseController {
                 best = suburb;
             }
         }
-        return best;
+        if (best != null) {
+            return best;
+        }
+        if (text.length() >= 3) {
+            for (Suburb suburb : suburbs) {
+                if (suburb.getName().toLowerCase(Locale.ROOT).startsWith(text)) {
+                    return suburb;
+                }
+            }
+        }
+        return null;
     }
 
     /** Outcome of a filed report: the species it was about, and whether it reached the heat map. */
@@ -599,23 +699,30 @@ public class IdentifyPestController extends BaseController {
     }
 
     /**
-     * Parses the WHEN field as local date and time. Returns null when blank or unreadable; the
-     * caller only passes non-blank text, so null means the user needs to fix the format.
+     * Combines the picked date and time into an instant; null when neither is set, so the
+     * database stamps the report with the moment it was filed. A day without a time gets midday,
+     * except today, which uses the current time.
      */
-    static Instant parseWhen(String text) {
-        if (text == null || text.isBlank()) {
+    static Instant combineWhen(LocalDate date, LocalTime time) {
+        if (date == null && time == null) {
             return null;
         }
-        try {
-            return LocalDateTime.parse(text.trim(), WHEN_FORMAT)
-                    .atZone(ZoneId.systemDefault())
-                    .toInstant();
-        } catch (DateTimeParseException e) {
-            return null;
+        LocalDate day = date != null ? date : LocalDate.now();
+        LocalTime clock = time;
+        if (clock == null) {
+            clock = day.equals(LocalDate.now())
+                    ? LocalTime.now().withSecond(0).withNano(0)
+                    : LocalTime.NOON;
         }
+        return day.atTime(clock).atZone(ZoneId.systemDefault()).toInstant();
     }
 
     private static String text(TextInputControl field) {
         return field.getText() == null ? "" : field.getText().trim();
+    }
+
+    /** The count dropdown's value as text, or blank when the user has not picked one. */
+    private String countValue() {
+        return countCombo.getValue() == null ? "" : countCombo.getValue();
     }
 }

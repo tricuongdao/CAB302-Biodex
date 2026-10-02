@@ -3,16 +3,19 @@ package com.biodex.controller.identify;
 import com.biodex.model.Suburb;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The pure logic behind Submit report: suburb inference, the location line and WHEN parsing.
+ * The pure logic behind Submit report: suburb matching, the location line and the WHEN pickers.
  * No JavaFX toolkit is needed for these helpers.
  */
 class IdentifyPestControllerTest {
@@ -37,6 +40,9 @@ class IdentifyPestControllerTest {
                 IdentifyPestController.findSuburbByText("kedron", suburbs).getName());
         assertEquals("West End",
                 IdentifyPestController.findSuburbByText("next to the West End ferry", suburbs).getName());
+        assertEquals("Gordon Park",
+                IdentifyPestController.findSuburbByText("gord", suburbs).getName(),
+                "a typed prefix selects the suburb");
         assertNull(IdentifyPestController.findSuburbByText("Nowhere", suburbs));
         assertNull(IdentifyPestController.findSuburbByText(null, suburbs));
         assertNull(IdentifyPestController.findSuburbByText("Kedron", List.of()));
@@ -57,16 +63,31 @@ class IdentifyPestControllerTest {
     }
 
     @Test
-    void parseWhenReadsLocalDatesAndRejectsJunk() {
-        Instant expected = LocalDateTime.of(2026, 8, 27, 16, 40)
-                .atZone(ZoneId.systemDefault())
-                .toInstant();
+    void combineWhenUsesThePickedDateAndTime() {
+        LocalDate day = LocalDate.of(2026, 8, 27);
+        LocalTime time = LocalTime.of(16, 40);
 
-        assertEquals(expected, IdentifyPestController.parseWhen("27 Aug 2026, 16:40"));
-        assertEquals(expected, IdentifyPestController.parseWhen("  27 Aug 2026, 16:40  "),
-                "surrounding whitespace is ignored");
-        assertNull(IdentifyPestController.parseWhen(""));
-        assertNull(IdentifyPestController.parseWhen("sometime last week"));
-        assertNull(IdentifyPestController.parseWhen("2026-08-27"));
+        assertEquals(day.atTime(time).atZone(ZoneId.systemDefault()).toInstant(),
+                IdentifyPestController.combineWhen(day, time));
+    }
+
+    @Test
+    void combineWhenFillsInSensibleDefaults() {
+        assertNull(IdentifyPestController.combineWhen(null, null),
+                "no date and no time leaves the timestamp to the database");
+
+        LocalDate pastDay = LocalDate.now().minusDays(3);
+        assertEquals(pastDay.atTime(LocalTime.NOON).atZone(ZoneId.systemDefault()).toInstant(),
+                IdentifyPestController.combineWhen(pastDay, null),
+                "a past day without a time defaults to midday");
+
+        LocalTime time = LocalTime.of(9, 30);
+        assertEquals(LocalDate.now().atTime(time).atZone(ZoneId.systemDefault()).toInstant(),
+                IdentifyPestController.combineWhen(null, time),
+                "a time without a day means today at that time");
+
+        Instant today = IdentifyPestController.combineWhen(LocalDate.now(), null);
+        assertTrue(Duration.between(today, Instant.now()).abs().toMinutes() <= 2,
+                "today without a time uses the current time");
     }
 }

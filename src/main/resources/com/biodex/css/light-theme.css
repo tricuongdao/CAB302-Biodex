@@ -164,6 +164,44 @@
     -fx-border-color: #44593a;
 }
 
+/* Combo boxes and the date picker mirror the text-field styling. */
+.combo-box, .date-picker {
+    -fx-background-color: #fffdf6;
+    -fx-background-radius: 8;
+    -fx-border-color: #d5ccb2;
+    -fx-border-radius: 8;
+}
+.combo-box:focused, .date-picker:focused { -fx-border-color: #44593a; }
+.combo-box .text-field, .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #2e2b1f;
+    -fx-prompt-text-fill: #a49d86;
+    -fx-padding: 4 6 4 6;
+}
+.combo-box .text-field:focused, .date-picker .text-field:focused { -fx-border-color: transparent; }
+.combo-box .list-cell { -fx-text-fill: #2e2b1f; -fx-background-color: transparent; }
+.combo-box .arrow, .date-picker .arrow { -fx-background-color: #6d6650; }
+.combo-box .arrow-button, .date-picker .arrow-button { -fx-background-color: transparent; }
+.combo-box-popup .list-view {
+    -fx-background-color: #fffdf6;
+    -fx-border-color: #d5ccb2;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.combo-box-popup .list-view .list-cell { -fx-background-color: #fffdf6; -fx-text-fill: #2e2b1f; }
+.combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #f0e9d6; }
+.combo-box-popup .list-view .list-cell:filled:selected { -fx-background-color: #dfe8d5; }
+.date-picker-popup {
+    -fx-background-color: #fffdf6;
+    -fx-border-color: #d5ccb2;
+}
+.date-picker-popup .month-year-pane { -fx-background-color: #f0e9d6; }
+.date-picker-popup .label { -fx-text-fill: #2e2b1f; }
+.date-picker-popup .day-cell:hover { -fx-background-color: #f0e9d6; }
+.date-picker-popup .day-cell:selected { -fx-background-color: #dfe8d5; }
+.date-picker-popup .day-cell:disabled { -fx-opacity: 0.4; }
+
 /* Reserved for the first feature sprint: field validation states. */
 .error-label { -fx-text-fill: #a8432e; -fx-font-size: 12px; }
 .success-label { -fx-text-fill: #44593a; -fx-font-size: 12px; }
