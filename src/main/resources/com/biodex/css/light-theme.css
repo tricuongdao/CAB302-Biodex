@@ -169,18 +169,53 @@
 .success-label { -fx-text-fill: #44593a; -fx-font-size: 12px; }
 .field-error { -fx-border-color: #a8432e; }
 
-/* Hyperlinks - Light/Dark/Auto switcher and inline links. */
-.theme-link, .text-link {
+/* Theme switch and inline links. */
+.theme-label { -fx-text-fill: #8b8571; }
+.theme-toggle {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+.theme-toggle:hover { -fx-background-color: transparent; }
+.theme-toggle-track {
+    -fx-pref-width: 58;
+    -fx-min-width: 58;
+    -fx-max-width: 58;
+    -fx-pref-height: 30;
+    -fx-background-color: #e2dac6;
+    -fx-background-radius: 999;
+    -fx-border-color: #cfc6ab;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-padding: 2 4 2 4;
+}
+.theme-toggle:selected .theme-toggle-track { -fx-background-color: #44593a; -fx-border-color: #44593a; }
+.theme-toggle:focused .theme-toggle-track { -fx-border-color: #82976d; }
+.theme-toggle-icons { -fx-spacing: 12; }
+.theme-toggle-sun, .theme-toggle-moon {
+    -fx-font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+    -fx-font-size: 15;
+    -fx-text-fill: #44593a;
+}
+.theme-toggle:selected .theme-toggle-sun,
+.theme-toggle:selected .theme-toggle-moon { -fx-text-fill: #e7eddb; }
+.theme-toggle-knob {
+    -fx-fill: #fffdf6;
+    -fx-stroke: #d5ccb2;
+    -fx-stroke-width: 0.8;
+    -fx-effect: dropshadow(gaussian, rgba(46, 43, 31, 0.22), 4, 0.25, 0, 1);
+}
+.text-link {
     -fx-text-fill: #44593a;
     -fx-underline: false;
     -fx-padding: 0;
 }
-.theme-link:visited, .text-link:visited,
-.theme-link:hover, .text-link:hover {
+.text-link:visited, .text-link:hover {
     -fx-text-fill: #44593a;
 }
-.theme-link:hover, .text-link:hover { -fx-underline: true; }
-.theme-muted { -fx-text-fill: #8b8571; }
+.text-link:hover { -fx-underline: true; }
 
 /* --- Auth screens (no sidebar) --- */
 .auth-screen { -fx-background-color: #f6f1e6; }
