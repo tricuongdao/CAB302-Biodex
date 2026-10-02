@@ -69,10 +69,10 @@ public class PestDetailController extends BaseController {
                 speciesDetailController.display(species);
                 localSightingsController.load(species.getSpeciesId());
             } else {
-                showNotInLocalDB(selection);
+                showApiDetails(selection);
             }
         });
-        task.setOnFailed(e -> showNotInLocalDB(selection));
+        task.setOnFailed(e -> showApiDetails(selection));
 
         new Thread(task, "local-species-loader").start();
     }
@@ -83,9 +83,13 @@ public class PestDetailController extends BaseController {
         localSightingsController.showUnavailable("Choose a species to see local sightings.");
     }
 
-    private void showNotInLocalDB(SpeciesSummary selection) {
-        breadcrumbLabel.setText("/ " + selection.displayName() + " (not in local database)");
-        speciesDetailController.displayUnavailable(selection);
+    /**
+     * Shows a species with no local record from the Atlas of Living Australia: the detail pane
+     * fetches its profile itself, and the sightings pane explains why nothing local is listed.
+     */
+    private void showApiDetails(SpeciesSummary selection) {
+        breadcrumbLabel.setText("/ " + selection.displayName());
+        speciesDetailController.displayFromApi(selection);
         localSightingsController.showUnavailable("Local sightings aren't available for this species yet.");
     }
 

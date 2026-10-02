@@ -4,6 +4,7 @@ import com.biodex.api.CuratedSpeciesService;
 import com.biodex.api.ServiceFactory;
 import com.biodex.api.SpeciesImageResolver;
 import com.biodex.api.SpeciesService;
+import com.biodex.api.dto.SpeciesProfile;
 import com.biodex.api.dto.SpeciesSummary;
 import com.biodex.controller.BaseController;
 import com.biodex.model.Species;
@@ -11,6 +12,7 @@ import com.biodex.routing.Route;
 import com.biodex.session.IdentifyDraft;
 
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -26,11 +28,19 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Left pane of Pest Detail: species photo, threat profile, facts, disposal guidance.
- * Receives a fully-loaded {@link Species} from the parent {@link PestDetailController}.
+ *
+ * <p>The parent {@link PestDetailController} calls {@link #display(Species)} for species with a
+ * local record, and {@link #displayFromApi(SpeciesSummary)} for species the Atlas of Living
+ * Australia knows but the local database does not. That path fetches the profile itself and
+ * renders whatever the Atlas - plus the bundled knowledge base, when it covers the species -
+ * can supply.
  */
 public class SpeciesDetailController extends BaseController {
 
@@ -47,6 +57,8 @@ public class SpeciesDetailController extends BaseController {
     @FXML private Label habitatLabel;
     @FXML private Label sizeLabel;
     @FXML private Label disposalLabel;
+    @FXML private Label taxonomyLabel;
+    @FXML private Label conservationLabel;
     @FXML private Button logSightingBtn;
     @FXML private Button addPhotoBtn;
     @FXML private HBox actionBox;
@@ -59,6 +71,9 @@ public class SpeciesDetailController extends BaseController {
     private final SpeciesService speciesService = ServiceFactory.speciesService();
     private final SpeciesImageResolver imageResolver = new SpeciesImageResolver(speciesService);
     private int photoRequest;
+
+    /** Guards the profile task, so a slow Atlas reply never overwrites a newer selection. */
+    private int profileRequest;
 
     @FXML
     private void initialize() {
@@ -99,6 +114,9 @@ public class SpeciesDetailController extends BaseController {
 
         // Facts: habitat + size
         renderFacts(species);
+        // Atlas-only facts stay hidden on the local path; clear anything a previous species left.
+        setFactLabel(taxonomyLabel, "", null);
+        setFactLabel(conservationLabel, "", null);
 
         // Disposal guidance
         if (species.getDisposalGuidance() != null && !species.getDisposalGuidance().isBlank()) {
@@ -126,16 +144,21 @@ public class SpeciesDetailController extends BaseController {
         threatBox.setVisible(false);
         factsBox.setVisible(false);
         disposalLabel.setVisible(false);
+        setFactLabel(taxonomyLabel, "", null);
+        setFactLabel(conservationLabel, "", null);
         actionBox.setVisible(false);
         actionBox.setManaged(false);
         hideActionMessage();
     }
 
     /**
-     * Empty state for a search result with no local record: shows the photo and names from the
-     * search card, explains the gap, and hides everything that needs a curated record.
+     * Shows a species with no local record by fetching its details from the Atlas of Living
+     * Australia. The names and photo from the search card stay on screen while the profile loads
+     * in the background; whatever the Atlas - and, when it covers the species, the bundled
+     * knowledge base - supplies is then rendered. Reporting files against a local record, so the
+     * action buttons stay hidden on this path.
      */
-    public void displayUnavailable(SpeciesSummary selection) {
+    public void displayFromApi(SpeciesSummary selection) {
         species = null;
         hideActionMessage();
         actionBox.setVisible(false);
@@ -152,7 +175,8 @@ public class SpeciesDetailController extends BaseController {
         photoView.setVisible(false);
         photoPlaceholder.setVisible(true);
         String guid = selection.getGuid();
-        if (guid != null && !guid.isBlank() && !guid.startsWith("fake:")) {
+        boolean resolvable = guid != null && !guid.isBlank() && !guid.startsWith("fake:");
+        if (resolvable) {
             int request = ++photoRequest;
             photoView.setVisible(true);
             imageResolver.imageForGuid(guid).whenComplete((url, error) -> {
@@ -166,17 +190,95 @@ public class SpeciesDetailController extends BaseController {
             });
         }
 
-        descriptionBox.getChildren().clear();
-        Label message = new Label("This species doesn't have a local profile yet. It isn't in "
-                + "the Biodex knowledge base, so there's no threat profile, habitat or disposal "
-                + "guidance to show.");
-        message.getStyleClass().add("muted");
-        message.setWrapText(true);
-        descriptionBox.getChildren().add(message);
-
         threatBox.setVisible(false);
         factsBox.setVisible(false);
         disposalLabel.setVisible(false);
+        setFactLabel(taxonomyLabel, "", null);
+        setFactLabel(conservationLabel, "", null);
+
+        if (!resolvable) {
+            renderDescriptionText(null, "This species has no Atlas of Living Australia record, "
+                    + "so there are no further details to load.");
+            return;
+        }
+
+        descriptionBox.getChildren().clear();
+        addMutedLabel(descriptionBox, "Loading details from the Atlas of Living Australia...");
+
+        int request = ++profileRequest;
+        Task<SpeciesProfile> task = new Task<>() {
+            @Override
+            protected SpeciesProfile call() {
+                return speciesService.profile(guid);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            if (request == profileRequest) {
+                renderProfile(task.getValue());
+            }
+        });
+        task.setOnFailed(event -> {
+            if (request == profileRequest) {
+                renderProfile(null);
+            }
+        });
+
+        Thread loader = new Thread(task, "species-profile-loader");
+        loader.setDaemon(true);
+        loader.start();
+    }
+
+    /** Renders Atlas profile details once the background fetch returns; null means it failed. */
+    private void renderProfile(SpeciesProfile profile) {
+        if (profile == null) {
+            renderDescriptionText(null, "Details for this species could not be loaded from the "
+                    + "Atlas of Living Australia. Check your connection and try again.");
+            return;
+        }
+
+        if (profile.getCommonName() != null && !profile.getCommonName().isBlank()) {
+            commonNameLabel.setText(profile.getCommonName());
+        }
+        if (profile.getScientificName() != null && !profile.getScientificName().isBlank()) {
+            scientificNameLabel.setText(profile.getScientificName());
+        }
+
+        renderTags(tagsFor(profile));
+        renderDescriptionText(profile.getDescription(),
+                "The Atlas of Living Australia has no description for this species yet.");
+        renderThreatRatings(profile.getThreatRatings());
+        renderProfileFacts(profile);
+
+        if (profile.getDisposalGuidance() != null && !profile.getDisposalGuidance().isBlank()) {
+            disposalLabel.setText(profile.getDisposalGuidance());
+            disposalLabel.setVisible(true);
+        }
+    }
+
+    /** Facts for an Atlas species: habitat, size, taxonomy and conservation status, as available. */
+    private void renderProfileFacts(SpeciesProfile profile) {
+        setFactLabel(habitatLabel, "Typical habitat: ", profile.getTypicalHabitat());
+        setFactLabel(sizeLabel, "Size: ", profile.getSizeRange());
+        setFactLabel(taxonomyLabel, "", taxonomyLine(
+                profile.getFamily(), profile.getOrder(), profile.getTaxonClass()));
+        setFactLabel(conservationLabel, "Conservation status: ",
+                profile.getConservationStatus());
+
+        factsBox.setVisible(habitatLabel.isVisible() || sizeLabel.isVisible()
+                || taxonomyLabel.isVisible() || conservationLabel.isVisible());
+    }
+
+    /** Threat bars from named 0-100 ratings; raw Atlas species have none and keep the box hidden. */
+    private void renderThreatRatings(Map<String, Integer> ratings) {
+        threatBars.getChildren().clear();
+        if (ratings == null || ratings.isEmpty()) {
+            threatBox.setVisible(false);
+            return;
+        }
+        threatBox.setVisible(true);
+        for (Map.Entry<String, Integer> rating : ratings.entrySet()) {
+            addThreatBar(rating.getKey(), rating.getValue() == null ? 0 : rating.getValue());
+        }
     }
 
     private void renderTags(List<String> tags) {
@@ -196,14 +298,17 @@ public class SpeciesDetailController extends BaseController {
 
     /** Renders the bundled knowledge base write-up, one Label per paragraph. */
     private void renderDescription(Species species) {
+        renderDescriptionText(
+                CuratedSpeciesService.bundledDescription(
+                        species.getAlaGuid(), species.getScientificName(), species.getCommonName()),
+                "No detailed write-up is available for this species yet.");
+    }
+
+    /** Renders a write-up, one Label per paragraph; blank text gets the given muted note. */
+    private void renderDescriptionText(String text, String emptyMessage) {
         descriptionBox.getChildren().clear();
-        String text = CuratedSpeciesService.bundledDescription(
-                species.getAlaGuid(), species.getScientificName(), species.getCommonName());
         if (text == null || text.isBlank()) {
-            Label fallback = new Label("No detailed write-up is available for this species yet.");
-            fallback.getStyleClass().add("muted");
-            fallback.setWrapText(true);
-            descriptionBox.getChildren().add(fallback);
+            addMutedLabel(descriptionBox, emptyMessage);
             return;
         }
         for (String paragraph : text.split("\\n\\s*\\n")) {
@@ -250,23 +355,99 @@ public class SpeciesDetailController extends BaseController {
     }
 
     private void renderFacts(Species species) {
-        if (species.getTypicalHabitat() == null && species.getSizeRange() == null) {
-            factsBox.setVisible(false);
+        setFactLabel(habitatLabel, "Typical habitat: ", species.getTypicalHabitat());
+        setFactLabel(sizeLabel, "Size: ", species.getSizeRange());
+        factsBox.setVisible(habitatLabel.isVisible() || sizeLabel.isVisible());
+    }
+
+    /**
+     * "Family: X · Order: Y · Class: Z" for the ranks the Atlas supplied, or null when it gave
+     * none. Package-private so the test can pin the format.
+     */
+    static String taxonomyLine(String family, String order, String taxonClass) {
+        StringBuilder line = new StringBuilder();
+        appendRank(line, "Family", family);
+        appendRank(line, "Order", order);
+        appendRank(line, "Class", taxonClass);
+        return line.length() == 0 ? null : line.toString();
+    }
+
+    private static void appendRank(StringBuilder line, String rank, String value) {
+        if (value == null || value.isBlank()) {
             return;
         }
-        factsBox.setVisible(true);
-
-        if (species.getTypicalHabitat() != null && !species.getTypicalHabitat().isBlank()) {
-            habitatLabel.setText("Typical habitat: " + species.getTypicalHabitat());
-        } else {
-            habitatLabel.setText("");
+        if (line.length() > 0) {
+            line.append(" \u00b7 ");
         }
+        line.append(rank).append(": ").append(titleCaseIfShouting(value.trim()));
+    }
 
-        if (species.getSizeRange() != null && !species.getSizeRange().isBlank()) {
-            sizeLabel.setText("Size: " + species.getSizeRange());
-        } else {
-            sizeLabel.setText("");
+    /**
+     * The Atlas reports ranks in all caps ("REPTILIA"); on screen they read better as "Reptilia".
+     * Values already in mixed case are left exactly as supplied.
+     */
+    private static String titleCaseIfShouting(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            if (Character.isLowerCase(value.charAt(i))) {
+                return value;
+            }
         }
+        StringBuilder titled = new StringBuilder(value.length());
+        boolean atWordStart = true;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (Character.isWhitespace(c) || c == '-') {
+                titled.append(c);
+                atWordStart = true;
+            } else {
+                titled.append(atWordStart ? Character.toUpperCase(c) : Character.toLowerCase(c));
+                atWordStart = false;
+            }
+        }
+        return titled.toString();
+    }
+
+    /**
+     * The chips to show for an Atlas profile: its own tags, plus an "Invasive" chip when the
+     * Atlas flags the species and no existing tag already says so. Package-private for the test.
+     */
+    static List<String> tagsFor(SpeciesProfile profile) {
+        List<String> chips = new ArrayList<>();
+        boolean flagged = false;
+        for (String tag : profile.getTags()) {
+            if (tag == null || tag.isBlank()) {
+                continue;
+            }
+            String trimmed = tag.trim();
+            chips.add(trimmed);
+            if (trimmed.toLowerCase(Locale.ROOT).contains("invasive")) {
+                flagged = true;
+            }
+        }
+        if (profile.isInvasive() && !flagged) {
+            chips.add("Invasive");
+        }
+        return chips;
+    }
+
+    /** Sets a fact label's text and hides it cleanly (collapsed, not just invisible) when blank. */
+    private static void setFactLabel(Label label, String prefix, String value) {
+        if (value == null || value.isBlank()) {
+            label.setText("");
+            label.setVisible(false);
+            label.setManaged(false);
+            return;
+        }
+        label.setText(prefix + value.trim());
+        label.setVisible(true);
+        label.setManaged(true);
+    }
+
+    private static void addMutedLabel(VBox box, String message) {
+        Label label = new Label(message);
+        label.getStyleClass().add("muted");
+        label.setWrapText(true);
+        box.getChildren().add(label);
     }
 
     /**
