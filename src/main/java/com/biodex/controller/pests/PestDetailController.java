@@ -80,12 +80,13 @@ public class PestDetailController extends BaseController {
     private void showNoSelection() {
         breadcrumbLabel.setText("/ nothing selected");
         speciesDetailController.display(null);
-        localSightingsController.load(-1);
+        localSightingsController.showUnavailable("Choose a species to see local sightings.");
     }
 
     private void showNotInLocalDB(SpeciesSummary selection) {
-        breadcrumbLabel.setText("/ " + selection.displayName() + " (not in local DB)");
-        // Could show a placeholder in the child panes
+        breadcrumbLabel.setText("/ " + selection.displayName() + " (not in local database)");
+        speciesDetailController.displayUnavailable(selection);
+        localSightingsController.showUnavailable("Local sightings aren't available for this species yet.");
     }
 
     @FXML

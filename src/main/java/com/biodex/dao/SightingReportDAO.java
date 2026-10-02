@@ -6,6 +6,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +38,15 @@ public class SightingReportDAO extends BaseDao {
              LIMIT ?
             """;
 
+    /** Matches the shape SQLite writes for CURRENT_TIMESTAMP, so stored values stay comparable. */
+    private static final DateTimeFormatter SQLITE_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+
     private static final String INSERT_REPORT = """
             INSERT INTO sighting_reports
-                  (species_id, suburb, location_label, latitude, longitude, reporter_user_id, photo_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                  (species_id, suburb, location_label, latitude, longitude, reporter_user_id, photo_path,
+                   reported_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
             """;
 
     /** Uses the shared application connection. */
@@ -94,7 +101,10 @@ public class SightingReportDAO extends BaseDao {
         return getRecentReports(speciesId, DEFAULT_RECENT_LIMIT);
     }
 
-    /** Inserts a new sighting report. Returns the generated report_id. */
+    /**
+     * Inserts a new sighting report. Returns the generated report_id.
+     * {@code reported_at} defaults to the current time unless the report carries its own.
+     */
     public int insertReport(SightingReport report) {
         return insertReturningKey(INSERT_REPORT,
                 stmt -> {
@@ -117,6 +127,9 @@ public class SightingReportDAO extends BaseDao {
                         stmt.setNull(6, Types.INTEGER);
                     }
                     stmt.setString(7, report.getPhotoPath());
+                    stmt.setString(8, report.getReportedAt() == null
+                            ? null
+                            : SQLITE_TIMESTAMP.format(report.getReportedAt()));
                 });
     }
 

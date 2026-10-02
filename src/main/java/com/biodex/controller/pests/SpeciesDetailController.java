@@ -1,11 +1,14 @@
 package com.biodex.controller.pests;
 
+import com.biodex.api.CuratedSpeciesService;
 import com.biodex.api.ServiceFactory;
 import com.biodex.api.SpeciesImageResolver;
 import com.biodex.api.SpeciesService;
+import com.biodex.api.dto.SpeciesSummary;
 import com.biodex.controller.BaseController;
 import com.biodex.model.Species;
 import com.biodex.routing.Route;
+import com.biodex.session.IdentifyDraft;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -19,7 +22,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -43,6 +49,11 @@ public class SpeciesDetailController extends BaseController {
     @FXML private Label disposalLabel;
     @FXML private Button logSightingBtn;
     @FXML private Button addPhotoBtn;
+    @FXML private HBox actionBox;
+    @FXML private Label actionMessageLabel;
+
+    /** Keep in step with the Identify screen's own photo limit. */
+    private static final long MAX_PHOTO_BYTES = 10L * 1024 * 1024;
 
     private Species species;
     private final SpeciesService speciesService = ServiceFactory.speciesService();
@@ -61,6 +72,9 @@ public class SpeciesDetailController extends BaseController {
             return;
         }
         this.species = species;
+        hideActionMessage();
+        actionBox.setVisible(true);
+        actionBox.setManaged(true);
 
         commonNameLabel.setText(species.getCommonName());
         scientificNameLabel.setText(species.getScientificName());
@@ -112,6 +126,57 @@ public class SpeciesDetailController extends BaseController {
         threatBox.setVisible(false);
         factsBox.setVisible(false);
         disposalLabel.setVisible(false);
+        actionBox.setVisible(false);
+        actionBox.setManaged(false);
+        hideActionMessage();
+    }
+
+    /**
+     * Empty state for a search result with no local record: shows the photo and names from the
+     * search card, explains the gap, and hides everything that needs a curated record.
+     */
+    public void displayUnavailable(SpeciesSummary selection) {
+        species = null;
+        hideActionMessage();
+        actionBox.setVisible(false);
+        actionBox.setManaged(false);
+
+        commonNameLabel.setText(selection.displayName());
+        scientificNameLabel.setText(
+                selection.getScientificName() == null ? "" : selection.getScientificName());
+        threatBadge.setVisible(false);
+        tagsBox.getChildren().clear();
+        tagsBox.setVisible(false);
+
+        photoView.setImage(null);
+        photoView.setVisible(false);
+        photoPlaceholder.setVisible(true);
+        String guid = selection.getGuid();
+        if (guid != null && !guid.isBlank() && !guid.startsWith("fake:")) {
+            int request = ++photoRequest;
+            photoView.setVisible(true);
+            imageResolver.imageForGuid(guid).whenComplete((url, error) -> {
+                if (url != null && !url.isBlank()) {
+                    Platform.runLater(() -> {
+                        if (request == photoRequest) {
+                            showPhoto(url, request);
+                        }
+                    });
+                }
+            });
+        }
+
+        descriptionBox.getChildren().clear();
+        Label message = new Label("This species doesn't have a local profile yet. It isn't in "
+                + "the Biodex knowledge base, so there's no threat profile, habitat or disposal "
+                + "guidance to show.");
+        message.getStyleClass().add("muted");
+        message.setWrapText(true);
+        descriptionBox.getChildren().add(message);
+
+        threatBox.setVisible(false);
+        factsBox.setVisible(false);
+        disposalLabel.setVisible(false);
     }
 
     private void renderTags(List<String> tags) {
@@ -129,15 +194,27 @@ public class SpeciesDetailController extends BaseController {
         tagsBox.setVisible(true);
     }
 
+    /** Renders the bundled knowledge base write-up, one Label per paragraph. */
     private void renderDescription(Species species) {
         descriptionBox.getChildren().clear();
-        // For local species, we could have a description field; for now show a placeholder
-        // The full description comes from the curated content merged by CuratedSpeciesService
-        // but we don't have a description field on the local Species model yet.
-        Label placeholder = new Label("Detailed description loaded from curated knowledge base.");
-        placeholder.getStyleClass().add("muted");
-        placeholder.setWrapText(true);
-        descriptionBox.getChildren().add(placeholder);
+        String text = CuratedSpeciesService.bundledDescription(
+                species.getAlaGuid(), species.getScientificName(), species.getCommonName());
+        if (text == null || text.isBlank()) {
+            Label fallback = new Label("No detailed write-up is available for this species yet.");
+            fallback.getStyleClass().add("muted");
+            fallback.setWrapText(true);
+            descriptionBox.getChildren().add(fallback);
+            return;
+        }
+        for (String paragraph : text.split("\\n\\s*\\n")) {
+            String trimmed = paragraph.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            Label label = new Label(trimmed);
+            label.setWrapText(true);
+            descriptionBox.getChildren().add(label);
+        }
     }
 
     private void renderThreatBars(Species species) {
@@ -258,15 +335,53 @@ public class SpeciesDetailController extends BaseController {
         photoView.setManaged(true);
     }
 
+    /** Hands the species to the Identify screen, where the report form is pinned to it. */
     @FXML
     private void handleLogSighting() {
-        if (species != null) {
-            router.go(Route.IDENTIFY_PEST); // TODO: pass speciesId to Log Sighting wizard
+        if (species == null) {
+            return;
         }
+        IdentifyDraft.getInstance().set(asSummary(species), null);
+        router.go(Route.IDENTIFY_PEST);
     }
 
+    /** Picks a photo for this species, then opens Identify with it preloaded and classified. */
     @FXML
     private void handleAddPhoto() {
-        // TODO: open photo capture/upload dialog for this species
+        if (species == null) {
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose a photo of " + species.getCommonName());
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Photos", "*.jpg", "*.jpeg", "*.png"));
+        Window window = addPhotoBtn.getScene() == null ? null : addPhotoBtn.getScene().getWindow();
+        File file = chooser.showOpenDialog(window);
+        if (file == null) {
+            return;
+        }
+        if (file.length() > MAX_PHOTO_BYTES) {
+            showActionMessage("That photo is larger than 10 MB - choose a smaller one.");
+            return;
+        }
+        IdentifyDraft.getInstance().set(asSummary(species), file.toPath());
+        router.go(Route.IDENTIFY_PEST);
+    }
+
+    private static SpeciesSummary asSummary(Species species) {
+        return new SpeciesSummary(
+                species.getAlaGuid(), species.getScientificName(),
+                species.getCommonName(), species.getPhotoPath());
+    }
+
+    private void showActionMessage(String message) {
+        actionMessageLabel.setText(message);
+        actionMessageLabel.setVisible(true);
+        actionMessageLabel.setManaged(true);
+    }
+
+    private void hideActionMessage() {
+        actionMessageLabel.setVisible(false);
+        actionMessageLabel.setManaged(false);
     }
 }

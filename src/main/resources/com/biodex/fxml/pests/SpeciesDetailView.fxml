@@ -65,7 +65,8 @@
             <Label fx:id="disposalLabel" wrapText="true" styleClass="note-warn" text="" visible="false"/>
 
             <!-- Action buttons -->
-            <HBox spacing="10">
+            <Label fx:id="actionMessageLabel" styleClass="muted" wrapText="true" visible="false" managed="false"/>
+            <HBox fx:id="actionBox" spacing="10">
                 <Button fx:id="logSightingBtn" text="Log sighting" maxWidth="Infinity" onAction="#handleLogSighting" mnemonicParsing="false"/>
                 <Button fx:id="addPhotoBtn" text="Add photo" maxWidth="Infinity" onAction="#handleAddPhoto" mnemonicParsing="false"/>
             </HBox>

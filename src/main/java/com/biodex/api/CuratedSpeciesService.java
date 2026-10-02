@@ -48,6 +48,9 @@ public final class CuratedSpeciesService implements SpeciesService {
     private static final Gson GSON = new Gson();
     private static final Type CURATED_LIST = new TypeToken<List<Curated>>() {}.getType();
 
+    /** Parsed once and shared: the bundled knowledge base never changes at runtime. */
+    private static volatile List<Curated> cachedEntries;
+
     private final SpeciesService delegate;
     private final Map<String, Curated> byGuid = new LinkedHashMap<>();
     private final Map<String, Curated> byScientificName = new LinkedHashMap<>();
@@ -233,8 +236,48 @@ public final class CuratedSpeciesService implements SpeciesService {
         }
     }
 
-    /** Parses the bundled knowledge base. Returns an empty list on any failure, never throws. */
+    /** Parses the bundled knowledge base once and caches it. Never throws; failures mean no entries. */
     static List<Curated> readEntries() {
+        List<Curated> entries = cachedEntries;
+        if (entries == null) {
+            entries = parseEntries();
+            cachedEntries = entries;
+        }
+        return entries;
+    }
+
+    /**
+     * The bundled description for a species, matched by guid, then scientific name, then common
+     * name - the same keys the merge uses. Local screens (like Species Details) hold a database
+     * record rather than a service result, so this gives them the knowledge base write-up without
+     * a network trip. Returns null when no entry matches.
+     */
+    public static String bundledDescription(String guid, String scientificName, String commonName) {
+        String wantedGuid = normalise(guid);
+        String wantedScientific = normalise(scientificName);
+        String wantedCommon = normalise(commonName);
+        Curated byScientific = null;
+        Curated byCommon = null;
+        for (Curated entry : readEntries()) {
+            if (!wantedGuid.isEmpty() && wantedGuid.equals(normalise(entry.guid))) {
+                return entry.description;
+            }
+            if (byScientific == null && !wantedScientific.isEmpty()
+                    && wantedScientific.equals(normalise(entry.scientificName))) {
+                byScientific = entry;
+            }
+            if (byCommon == null && !wantedCommon.isEmpty()
+                    && wantedCommon.equals(normalise(entry.commonName))) {
+                byCommon = entry;
+            }
+        }
+        if (byScientific != null) {
+            return byScientific.description;
+        }
+        return byCommon == null ? null : byCommon.description;
+    }
+
+    private static List<Curated> parseEntries() {
         try (InputStream input = CuratedSpeciesService.class.getResourceAsStream(CONTENT_RESOURCE)) {
             if (input == null) {
                 return List.of();

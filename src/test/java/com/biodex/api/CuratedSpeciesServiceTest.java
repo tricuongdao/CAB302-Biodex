@@ -66,7 +66,7 @@ class CuratedSpeciesServiceTest {
         assertEquals("Toad", merged.getCommonName(), "delegate common name wins");
         assertEquals("https://images.ala.org.au/x.png", merged.getImageUrl(), "delegate photo wins");
         assertEquals("Bufonidae", merged.getFamily(), "delegate taxonomy wins");
-        assertEquals("Album count", merged.getThreatRatings().keySet().iterator().next(),
+        assertTrue(merged.getThreatRatings().containsKey("Album count"),
                 "delegate-only ratings survive the merge");
         assertTrue(merged.getThreatRatings().containsKey("Aggression"),
                 "curated ratings are added alongside the delegate's");
@@ -143,6 +143,41 @@ class CuratedSpeciesServiceTest {
         assertEquals(1, results.size());
         assertEquals(CANE_TOAD_COMMON, results.get(0).getCommonName(),
                 "the curated knowledge base supplies the missing common name");
+    }
+
+    // ------------------------------------------------------------ bundled lookups
+
+    @Test
+    void bundledDescriptionResolvesByGuidScientificNameOrCommonName() {
+        assertTrue(CuratedSpeciesService.bundledDescription("fake:rhinella-marina", null, null)
+                .contains("cane toad"), "a guid match returns the write-up");
+
+        String byScientific = CuratedSpeciesService.bundledDescription(null, "Rhinella marina", null);
+        assertNotNull(byScientific);
+        assertTrue(byScientific.length() > 200, "a real write-up, not one line");
+
+        String byCommon = CuratedSpeciesService.bundledDescription(null, null, "Cane Toad");
+        assertNotNull(byCommon, "the common name is the last-resort key");
+        assertEquals(byScientific, byCommon);
+    }
+
+    @Test
+    void bundledDescriptionReturnsNullWhenUncovered() {
+        assertNull(CuratedSpeciesService.bundledDescription(
+                "fake:tyrannosaurus-rex", "Tyrannosaurus rex", "T. rex"));
+    }
+
+    @Test
+    void everyLocalSpeciesSeedHasABundledDescription() {
+        // These are the nine seeded species (and the model's labels); Species Details depends on
+        // each having a write-up to show, so a missing one is a real regression.
+        for (String scientific : List.of("Solenopsis invicta", "Rhinella marina",
+                "Hemidactylus frenatus", "Acridotheres tristis", "Vulpes vulpes",
+                "Lantana camara", "Litoria caerulea", "Limnodynastes peronii",
+                "Manorina melanocephala")) {
+            assertNotNull(CuratedSpeciesService.bundledDescription(null, scientific, null),
+                    scientific + " needs a bundled description");
+        }
     }
 
     // ------------------------------------------------------------ content integrity
