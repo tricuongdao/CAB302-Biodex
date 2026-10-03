@@ -52,6 +52,58 @@ class SpeciesImageResolverTest {
         assertEquals(0, delegate.imageCalls + delegate.autocompleteCalls);
     }
 
+    @Test
+    void subgenusNamesStillMatchTheLocalRecord() throws Exception {
+        SubgenusImageService delegate = new SubgenusImageService();
+        SpeciesImageResolver resolver = new SpeciesImageResolver(delegate);
+
+        String url = resolver
+                .imageForScientificName("Manorina melanocephala").get(5, TimeUnit.SECONDS);
+
+        assertEquals("https://img/miner", url);
+    }
+
+    @Test
+    void normaliseNameDropsBracketedSubgenusAndCase() {
+        assertEquals("manorina melanocephala",
+                SpeciesImageResolver.normaliseName("Manorina (Myzantha) melanocephala"));
+        assertEquals("varanus varius", SpeciesImageResolver.normaliseName("  Varanus  varius "));
+        assertEquals("rhinella marina", SpeciesImageResolver.normaliseName("Rhinella marina"));
+    }
+
+    /** Stub whose only match carries a subgenus in brackets, like the noisy miner on the Atlas. */
+    private static final class SubgenusImageService implements SpeciesService {
+        int autocompleteCalls;
+
+        @Override
+        public List<SpeciesSummary> autocomplete(String query, int limit) {
+            autocompleteCalls++;
+            return List.of(new SpeciesSummary(
+                    "guid:miner", "Manorina (Myzantha) melanocephala", "Noisy Miner", null));
+        }
+
+        @Override
+        public SpeciesProfile profile(String guid) {
+            return null;
+        }
+
+        @Override
+        public String imageUrl(String guid) {
+            return "https://img/miner";
+        }
+
+        @Override
+        public List<OccurrencePoint> occurrencesNear(
+                String scientificName, double lat, double lon, double radiusKm, int limit) {
+            return List.of();
+        }
+
+        @Override
+        public List<AreaCount> densityByArea(String scientificName, String facetField) {
+            return List.of();
+        }
+    }
+
     /** Stub that serves one thumbnail-less match plus a canned image per guid. */
     private static final class CountingImageService implements SpeciesService {
         int imageCalls;

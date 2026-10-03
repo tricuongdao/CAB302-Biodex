@@ -39,6 +39,14 @@ public class SpeciesDAO extends BaseDao {
              GROUP BY s.species_id
             """;
 
+    private static final String SELECT_BY_COMMON = """
+            SELECT s.*, GROUP_CONCAT(st.tag, ',') AS tags
+              FROM species s
+              LEFT JOIN species_tags st ON st.species_id = s.species_id
+             WHERE lower(s.common_name) = lower(?)
+             GROUP BY s.species_id
+            """;
+
     /** Uses the shared application connection. */
     public SpeciesDAO() {
         super();
@@ -73,6 +81,16 @@ public class SpeciesDAO extends BaseDao {
         }
         return queryOne(SELECT_BY_SCIENTIFIC,
                 stmt -> stmt.setString(1, scientificName.trim()),
+                this::mapRow);
+    }
+
+    /** Finds a species by exact common name (case-insensitive). */
+    public Optional<Species> findByCommonName(String commonName) {
+        if (commonName == null || commonName.isBlank()) {
+            return Optional.empty();
+        }
+        return queryOne(SELECT_BY_COMMON,
+                stmt -> stmt.setString(1, commonName.trim()),
                 this::mapRow);
     }
 

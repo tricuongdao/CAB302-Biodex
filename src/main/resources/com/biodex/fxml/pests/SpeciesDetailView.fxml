@@ -48,7 +48,7 @@
                 <VBox fx:id="threatBars" spacing="6"/>
             </VBox>
 
-            <!-- Facts: Habitat + Size -->
+            <!-- Facts: habitat + size for local records; taxonomy + status for Atlas species -->
             <VBox fx:id="factsBox" spacing="8" visible="false">
                 <Label text="At a glance" styleClass="section-title"/>
                 <HBox spacing="10">
@@ -59,13 +59,16 @@
                         <Label fx:id="sizeLabel" text="" wrapText="true"/>
                     </VBox>
                 </HBox>
+                <Label fx:id="taxonomyLabel" text="" wrapText="true" visible="false" managed="false"/>
+                <Label fx:id="conservationLabel" text="" styleClass="muted" wrapText="true" visible="false" managed="false"/>
             </VBox>
 
             <!-- Disposal Guidance -->
             <Label fx:id="disposalLabel" wrapText="true" styleClass="note-warn" text="" visible="false"/>
 
             <!-- Action buttons -->
-            <HBox spacing="10">
+            <Label fx:id="actionMessageLabel" styleClass="muted" wrapText="true" visible="false" managed="false"/>
+            <HBox fx:id="actionBox" spacing="10">
                 <Button fx:id="logSightingBtn" text="Log sighting" maxWidth="Infinity" onAction="#handleLogSighting" mnemonicParsing="false"/>
                 <Button fx:id="addPhotoBtn" text="Add photo" maxWidth="Infinity" onAction="#handleAddPhoto" mnemonicParsing="false"/>
             </HBox>

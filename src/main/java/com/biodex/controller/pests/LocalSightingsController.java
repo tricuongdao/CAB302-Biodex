@@ -31,9 +31,10 @@ public class LocalSightingsController extends BaseController {
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("d MMM uuuu");
 
     @FXML private VBox densityCardContainer;
+    @FXML private Label densityEmptyLabel;
     @FXML private VBox recentReportsContainer;
     @FXML private VBox recentReportsList;
-    @FXML private Label emptyStateLabel;
+    @FXML private Label recentEmptyLabel;
 
     private final SightingReportDAO reportDAO = new SightingReportDAO();
 
@@ -44,6 +45,12 @@ public class LocalSightingsController extends BaseController {
 
     /** Loads density cards and recent reports for the given species. */
     public void load(int speciesId) {
+        densityCardContainer.setVisible(true);
+        densityEmptyLabel.setVisible(false);
+        densityEmptyLabel.setManaged(false);
+        recentEmptyLabel.setVisible(false);
+        recentEmptyLabel.setManaged(false);
+
         // Density task
         Task<Map<String, Integer>> densityTask = new Task<>() {
             @Override
@@ -52,7 +59,7 @@ public class LocalSightingsController extends BaseController {
             }
         };
         densityTask.setOnSucceeded(e -> renderDensityCards(densityTask.getValue()));
-        densityTask.setOnFailed(e -> showEmptyState("Could not load local sightings."));
+        densityTask.setOnFailed(e -> showDensityMessage("Could not load local sightings."));
         new Thread(densityTask, "sightings-density-loader").start();
 
         // Recent reports task
@@ -63,7 +70,7 @@ public class LocalSightingsController extends BaseController {
             }
         };
         recentTask.setOnSucceeded(e -> renderRecentReports(recentTask.getValue()));
-        recentTask.setOnFailed(e -> showEmptyState("Could not load recent reports."));
+        recentTask.setOnFailed(e -> showRecentMessage("Could not load recent reports."));
         new Thread(recentTask, "sightings-recent-loader").start();
     }
 
@@ -71,9 +78,13 @@ public class LocalSightingsController extends BaseController {
         densityCardContainer.getChildren().clear();
 
         if (counts == null || counts.isEmpty()) {
-            showEmptyState("No reports in the last 30 days");
+            showDensityMessage("No reports in the last 30 days");
             return;
         }
+
+        densityCardContainer.setVisible(true);
+        densityEmptyLabel.setVisible(false);
+        densityEmptyLabel.setManaged(false);
 
         int maxCount = counts.values().stream().max(Integer::compare).orElse(1);
 
@@ -113,12 +124,14 @@ public class LocalSightingsController extends BaseController {
         recentReportsList.getChildren().clear();
 
         if (reports == null || reports.isEmpty()) {
-            showEmptyState("No recent reports");
+            showRecentMessage("No recent reports");
             return;
         }
 
         recentReportsContainer.setVisible(true);
-        emptyStateLabel.setVisible(false);
+        recentReportsContainer.setManaged(true);
+        recentEmptyLabel.setVisible(false);
+        recentEmptyLabel.setManaged(false);
 
         for (int i = 0; i < reports.size(); i++) {
             SightingReport r = reports.get(i);
@@ -162,11 +175,37 @@ public class LocalSightingsController extends BaseController {
         return row;
     }
 
-    private void showEmptyState(String message) {
+    /** Shows a density-area message without touching the recent reports list. */
+    private void showDensityMessage(String message) {
         densityCardContainer.getChildren().clear();
+        densityCardContainer.setVisible(false);
+        densityEmptyLabel.setText(message);
+        densityEmptyLabel.setVisible(true);
+        densityEmptyLabel.setManaged(true);
+    }
+
+    /** Shows a recent-reports message without touching the density cards. */
+    private void showRecentMessage(String message) {
+        recentReportsList.getChildren().clear();
         recentReportsContainer.setVisible(false);
-        emptyStateLabel.setText(message);
-        emptyStateLabel.setVisible(true);
+        recentReportsContainer.setManaged(false);
+        recentEmptyLabel.setText(message);
+        recentEmptyLabel.setVisible(true);
+        recentEmptyLabel.setManaged(true);
+    }
+
+    /** Replaces the whole pane with one message, for a species with no local profile. */
+    public void showUnavailable(String message) {
+        densityCardContainer.getChildren().clear();
+        densityCardContainer.setVisible(false);
+        recentReportsList.getChildren().clear();
+        recentReportsContainer.setVisible(false);
+        recentReportsContainer.setManaged(false);
+        densityEmptyLabel.setText(message);
+        densityEmptyLabel.setVisible(true);
+        densityEmptyLabel.setManaged(true);
+        recentEmptyLabel.setVisible(false);
+        recentEmptyLabel.setManaged(false);
     }
 
     @FXML

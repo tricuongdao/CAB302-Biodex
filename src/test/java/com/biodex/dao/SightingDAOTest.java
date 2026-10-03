@@ -10,7 +10,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,6 +101,38 @@ class SightingDAOTest {
         List<MapSighting> sightings = sightingDAO.findForMap("Cane Toad", null);
 
         assertTrue(sightings.isEmpty());
+    }
+
+    @Test
+    void insertSightingStoresARowTheMapCanPlot() throws SQLException {
+        int kedron = insertSuburb("Kedron", "4031", -27.4020, 153.0300);
+        Instant when = Instant.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+
+        int sightingId = sightingDAO.insertSighting(
+                userId, kedron, "Cane Toad", "Under the outdoor light", null, when);
+
+        assertTrue(sightingId > 0);
+        List<MapSighting> sightings = sightingDAO.findForMap("cane toad", null);
+        assertEquals(1, sightings.size());
+        MapSighting plotted = sightings.get(0);
+        assertEquals("Cane Toad", plotted.getSpeciesName());
+        assertEquals("Under the outdoor light", plotted.getDescription());
+        assertEquals("Kedron", plotted.getSuburbName());
+        assertEquals(-27.4020, plotted.getLatitude(), 0.00001);
+        assertEquals(LocalDate.now().minusDays(1), plotted.getSightingDate());
+    }
+
+    @Test
+    void insertSightingDefaultsToNowWhenNoTimeGiven() throws SQLException {
+        int kedron = insertSuburb("Kedron", "4031", -27.4020, 153.0300);
+
+        int sightingId = sightingDAO.insertSighting(userId, kedron, "Fire Ant", null, null, null);
+
+        assertTrue(sightingId > 0);
+        List<MapSighting> sightings =
+                sightingDAO.findForMap(null, LocalDate.now().minusDays(1));
+        assertEquals(1, sightings.size());
+        assertEquals(LocalDate.now(), sightings.get(0).getSightingDate());
     }
 
     @Test

@@ -181,6 +181,47 @@
     -fx-border-color: #8fae7f;
 }
 
+/* Combo boxes and the date picker mirror the text-field styling. */
+.combo-box, .date-picker {
+    -fx-background-color: #232720;
+    -fx-background-radius: 8;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 8;
+}
+.combo-box:focused, .date-picker:focused { -fx-border-color: #8fae7f; }
+.combo-box .text-field, .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #e9e6d8;
+    -fx-prompt-text-fill: #6e6a5a;
+    -fx-padding: 4 6 4 6;
+}
+.combo-box .text-field:focused, .date-picker .text-field:focused { -fx-border-color: transparent; }
+.combo-box .list-cell { -fx-text-fill: #e9e6d8; -fx-background-color: transparent; }
+.combo-box .arrow, .date-picker .arrow { -fx-background-color: #a29c87; }
+.combo-box .arrow-button, .date-picker .arrow-button { -fx-background-color: transparent; }
+.combo-box-popup .list-view {
+    -fx-background-color: #232720;
+    -fx-border-color: #4a5040;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.combo-box-popup .list-view .list-cell { -fx-background-color: #232720; -fx-text-fill: #e9e6d8; }
+.combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #384231; }
+.combo-box-popup .list-view .list-cell:filled:selected { -fx-background-color: #44593a; }
+.date-picker-popup {
+    -fx-background-color: #232720;
+    -fx-border-color: #4a5040;
+}
+.date-picker-popup .month-year-pane { -fx-background-color: #2c322a; }
+.date-picker-popup .label { -fx-text-fill: #e9e6d8; }
+.date-picker-popup .day-cell { -fx-background-color: #232720; -fx-text-fill: #e9e6d8; }
+.date-picker-popup .previous-month,
+.date-picker-popup .next-month { -fx-background-color: #2a3027; -fx-text-fill: #8a9478; }
+.date-picker-popup .day-cell:hover { -fx-background-color: #384231; }
+.date-picker-popup .day-cell:selected { -fx-background-color: #44593a; }
+.date-picker-popup .day-cell:disabled { -fx-opacity: 0.35; }
+
 /* Reserved for the first feature sprint: field validation states. */
 .error-label { -fx-text-fill: #e89b83; -fx-font-size: 12px; }
 .success-label { -fx-text-fill: #a8c58d; -fx-font-size: 12px; }

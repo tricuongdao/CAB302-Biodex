@@ -29,14 +29,17 @@
                 <!-- Density cards -->
                 <VBox fx:id="densityCardContainer" spacing="8"/>
 
+                <!-- Density-area empty state -->
+                <Label fx:id="densityEmptyLabel" text="No reports in the last 30 days" styleClass="muted" wrapText="true" visible="false" managed="false"/>
+
                 <!-- Recent reports -->
-                <VBox fx:id="recentReportsContainer" spacing="8" visible="false">
+                <VBox fx:id="recentReportsContainer" spacing="8" visible="false" managed="false">
                     <Label text="Recent reports near you" styleClass="section-title"/>
                     <VBox fx:id="recentReportsList" spacing="6"/>
                 </VBox>
 
-                <!-- Empty state -->
-                <Label fx:id="emptyStateLabel" text="No reports in the last 30 days" styleClass="muted" wrapText="true" visible="false"/>
+                <!-- Recent-area empty state -->
+                <Label fx:id="recentEmptyLabel" text="No recent reports" styleClass="muted" wrapText="true" visible="false" managed="false"/>
 
                 <!-- Open full map button -->
                 <Button fx:id="openFullMapBtn" text="Open full map" maxWidth="Infinity" onAction="#handleOpenFullMap" mnemonicParsing="false"/>
