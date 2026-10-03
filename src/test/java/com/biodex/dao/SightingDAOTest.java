@@ -101,6 +101,41 @@ class SightingDAOTest {
         assertTrue(sightings.isEmpty());
     }
 
+    @Test
+    void speciesChoicesIncludeAFourthSpeciesAndAreSortedWithoutCaseDuplicates() throws SQLException {
+        int kedron = insertSuburb("Kedron", "4031", -27.4020, 153.0300);
+        insertSighting(kedron, "Water Hyacinth", null, "2026-09-08");
+        insertSighting(kedron, "Fire Ant", null, "2026-09-08");
+        insertSighting(kedron, "Cane Toad", null, "2026-09-08");
+        insertSighting(kedron, "  Lantana  ", null, "2020-01-01");
+        insertSighting(kedron, "lantana", null, "2020-01-02");
+
+        assertEquals(List.of("Cane Toad", "Fire Ant", "lantana", "Water Hyacinth"),
+                sightingDAO.findSpeciesForMap());
+        // The displayed, trimmed option must match padded/case-varied saved names too.
+        assertEquals(2, sightingDAO.findForMap("Lantana", null).size());
+        assertEquals(0, sightingDAO.findForMap("Lantana", LocalDate.of(2026, 9, 1)).size());
+    }
+
+    @Test
+    void speciesChoicesExcludeSightingsThatCannotBePlottedAndBlankNames() throws SQLException {
+        int mapped = insertSuburb("Kedron", "4031", -27.4020, 153.0300);
+        int unmapped = insertSuburb("Unknown", "4000", null, null);
+        int outside = insertSuburb("Sydney", "2000", -33.8688, 151.2093);
+        insertSighting(mapped, "Lantana", null, "2026-09-08");
+        insertSighting(unmapped, "Fire Ant", null, "2026-09-08");
+        insertSighting(outside, "Cane Toad", null, "2026-09-08");
+        insertSighting(mapped, "Water Hyacinth", null, "not-a-date");
+        insertSighting(mapped, "  ", null, "2026-09-08");
+
+        assertEquals(List.of("Lantana"), sightingDAO.findSpeciesForMap());
+    }
+
+    @Test
+    void speciesChoicesAreEmptyWithoutSavedSightings() {
+        assertTrue(sightingDAO.findSpeciesForMap().isEmpty());
+    }
+
     private int insertUser() throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",

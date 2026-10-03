@@ -1,12 +1,14 @@
 package com.biodex.dao;
 
 import com.biodex.model.MapSighting;
+import com.biodex.util.BrisbaneMapProjection;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Reads sightings in a map-ready form by joining each record to its suburb coordinates.
@@ -30,7 +32,7 @@ public class SightingDAO extends BaseDao {
              WHERE su.latitude IS NOT NULL
                AND su.longitude IS NOT NULL
                AND date(s.sighted_at) IS NOT NULL
-               AND (? IS NULL OR lower(s.species_name) = lower(?))
+               AND (? IS NULL OR lower(trim(s.species_name)) = lower(?))
                AND (? IS NULL OR date(s.sighted_at) >= date(?))
              ORDER BY datetime(s.sighted_at) DESC, s.sighting_id DESC
             """;
@@ -43,6 +45,22 @@ public class SightingDAO extends BaseDao {
     /** Uses the given connection. Tests pass an in-memory connection here. */
     public SightingDAO(Connection connection) {
         super(connection);
+    }
+
+    /**
+     * Returns alphabetically ordered, case-insensitive species choices from plottable sightings.
+     * Deliberately ignores the active date filter so older species remain available to select.
+     */
+    public List<String> findSpeciesForMap() {
+        TreeSet<String> species = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (MapSighting sighting : findForMap(null, null)) {
+            String name = normaliseOptional(sighting.getSpeciesName());
+            if (name != null && BrisbaneMapProjection.project(
+                    sighting.getLatitude(), sighting.getLongitude()).isPresent()) {
+                species.add(name);
+            }
+        }
+        return List.copyOf(species);
     }
 
     /**

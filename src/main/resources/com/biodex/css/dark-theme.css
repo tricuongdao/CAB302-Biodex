@@ -33,6 +33,25 @@
 /* Small uppercase label above a field. */
 .field-label { -fx-font-size: 10px; -fx-text-fill: #a29c87; }
 
+/* Species dropdown on the heat map, including its popup list. */
+.heat-map-species-filter {
+    -fx-background-color: #232720;
+    -fx-background-radius: 8;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 8;
+}
+.heat-map-species-filter:focused { -fx-border-color: #8fae7f; }
+.heat-map-species-filter .list-cell {
+    -fx-background-color: #232720;
+    -fx-text-fill: #e9e6d8;
+}
+.heat-map-species-filter .list-cell:filled:hover,
+.heat-map-species-filter .list-cell:filled:selected {
+    -fx-background-color: #3a4832;
+    -fx-text-fill: #e9e6d8;
+}
+.heat-map-species-filter .arrow { -fx-background-color: #a9c78f; }
+
 /* Panel that groups related controls. */
 .card {
     -fx-background-color: #232720;

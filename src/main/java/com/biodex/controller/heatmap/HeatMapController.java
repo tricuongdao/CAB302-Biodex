@@ -13,6 +13,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Point2D;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Tooltip;
@@ -71,13 +72,7 @@ public class HeatMapController extends BaseController {
     private Button last30DaysButton;
 
     @FXML
-    private Button caneToadButton;
-
-    @FXML
-    private Button fireAntButton;
-
-    @FXML
-    private Button waterHyacinthButton;
+    private ComboBox<SpeciesChoice> speciesFilter;
 
     @FXML
     private WebView basemapView;
@@ -101,12 +96,16 @@ public class HeatMapController extends BaseController {
 
     private String selectedSpecies;
     private LocalDate fromDate;
-    private Task<List<MapSighting>> activeLoad;
+    private Task<MapData> activeLoad;
+    private boolean speciesChoicesLoaded;
+    private boolean updatingSpeciesChoices;
 
     @FXML
     private void initialize() {
         sidebarController.setActive("heatmap");
         fromDate = LocalDate.now().minusDays(29);
+        speciesFilter.getItems().add(new SpeciesChoice(null));
+        speciesFilter.getSelectionModel().selectFirst();
         updateFilterStyles();
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(hotspotLayer.widthProperty());
@@ -147,24 +146,25 @@ public class HeatMapController extends BaseController {
     }
 
     @FXML
-    private void onCaneToad() {
-        selectSpecies("Cane Toad");
-    }
-
-    @FXML
-    private void onFireAnt() {
-        selectSpecies("Fire Ant");
-    }
-
-    @FXML
-    private void onWaterHyacinth() {
-        selectSpecies("Water Hyacinth");
+    private void onSpeciesChanged() {
+        if (updatingSpeciesChoices) {
+            return;
+        }
+        SpeciesChoice choice = speciesFilter.getValue();
+        String speciesName = choice == null ? null : choice.name();
+        if (!java.util.Objects.equals(selectedSpecies, speciesName)) {
+            selectedSpecies = speciesName;
+            loadSightings();
+        }
     }
 
     @FXML
     private void onClearFilters() {
         selectedSpecies = null;
         fromDate = null;
+        updatingSpeciesChoices = true;
+        speciesFilter.getSelectionModel().selectFirst();
+        updatingSpeciesChoices = false;
         updateFilterStyles();
         loadSightings();
     }
@@ -172,12 +172,6 @@ public class HeatMapController extends BaseController {
     @FXML
     private void onReportSighting() {
         router.go(Route.IDENTIFY_PEST);
-    }
-
-    private void selectSpecies(String speciesName) {
-        selectedSpecies = speciesName.equals(selectedSpecies) ? null : speciesName;
-        updateFilterStyles();
-        loadSightings();
     }
 
     /** Runs the SQLite query away from the JavaFX application thread. */
@@ -188,19 +182,33 @@ public class HeatMapController extends BaseController {
 
         String speciesSnapshot = selectedSpecies;
         LocalDate dateSnapshot = fromDate;
-        Task<List<MapSighting>> task = new Task<>() {
+        boolean loadSpeciesChoices = !speciesChoicesLoaded;
+        Task<MapData> task = new Task<>() {
             @Override
-            protected List<MapSighting> call() {
-                return sightingDAO.findForMap(speciesSnapshot, dateSnapshot);
+            protected MapData call() {
+                List<String> species = loadSpeciesChoices ? sightingDAO.findSpeciesForMap() : null;
+                return new MapData(species, sightingDAO.findForMap(speciesSnapshot, dateSnapshot));
             }
         };
         activeLoad = task;
 
-        task.setOnRunning(event -> setLoading(true));
+        setLoading(true);
         task.setOnSucceeded(event -> {
             if (activeLoad == task) {
+                MapData data = task.getValue();
+                if (data.species() != null) {
+                    updatingSpeciesChoices = true;
+                    try {
+                        speciesFilter.getItems().setAll(new SpeciesChoice(null));
+                        data.species().forEach(name -> speciesFilter.getItems().add(new SpeciesChoice(name)));
+                        speciesFilter.getSelectionModel().selectFirst();
+                        speciesChoicesLoaded = true;
+                    } finally {
+                        updatingSpeciesChoices = false;
+                    }
+                }
                 setLoading(false);
-                renderSightings(task.getValue());
+                renderSightings(data.sightings());
             }
         });
         task.setOnFailed(event -> {
@@ -298,6 +306,7 @@ public class HeatMapController extends BaseController {
     }
 
     private void setLoading(boolean loading) {
+        speciesFilter.setDisable(loading || !speciesChoicesLoaded);
         loadingIndicator.setVisible(loading);
         loadingIndicator.setManaged(loading);
         if (loading) {
@@ -336,9 +345,17 @@ public class HeatMapController extends BaseController {
                 && fromDate.equals(LocalDate.now().minusDays(6)));
         setSelected(last30DaysButton, fromDate != null
                 && fromDate.equals(LocalDate.now().minusDays(29)));
-        setSelected(caneToadButton, "Cane Toad".equals(selectedSpecies));
-        setSelected(fireAntButton, "Fire Ant".equals(selectedSpecies));
-        setSelected(waterHyacinthButton, "Water Hyacinth".equals(selectedSpecies));
+    }
+
+    private record MapData(List<String> species, List<MapSighting> sightings) {
+    }
+
+    /** A separate all-species option avoids treating any stored species name as a special value. */
+    private record SpeciesChoice(String name) {
+        @Override
+        public String toString() {
+            return name == null ? "All species" : name;
+        }
     }
 
     private static void setSelected(Button button, boolean selected) {
