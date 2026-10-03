@@ -81,6 +81,7 @@
     -fx-border-color: #3a4033;
     -fx-border-radius: 10;
     -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 14, 0, 0, 4);
 }
 
 /* Primary action. */
@@ -92,7 +93,10 @@
     -fx-padding: 8 18 8 18;
     -fx-cursor: hand;
 }
-.button:hover { -fx-background-color: #6b8c5b; }
+.button:hover {
+    -fx-background-color: #6b8c5b;
+    -fx-effect: dropshadow(gaussian, rgba(107, 140, 91, 0.35), 10, 0, 0, 3);
+}
 .button:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
 
 /* Secondary action, sits next to a primary one. */
@@ -320,7 +324,14 @@
     -fx-font-size: 13px;
 }
 .sidebar-link:hover { -fx-background-color: #55704a; }
-.sidebar-link-active { -fx-background-color: #5a7350; -fx-text-fill: #ffffff; }
+.sidebar-link-active {
+    -fx-background-color: #5a7350;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #f6f1e6;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 8;
+    -fx-padding: 7 12 7 9;
+}
 .sidebar-muted { -fx-text-fill: #b9c0a6; -fx-font-size: 11px; }
 .avatar { -fx-background-color: #2f4429; -fx-background-radius: 999; -fx-alignment: center; }
 .avatar-initials { -fx-text-fill: #f6f1e6; -fx-font-weight: bold; -fx-font-size: 12px; }
@@ -357,7 +368,10 @@
 .divider { -fx-background-color: #3a4033; -fx-pref-height: 1; }
 .pest-photo { -fx-background-color: #2c3128; -fx-background-radius: 8; }
 .clickable { -fx-cursor: hand; }
-.clickable:hover { -fx-border-color: #8fae7f; }
+.clickable:hover {
+    -fx-border-color: #8fae7f;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0, 0, 8);
+}
 
 /* Photo upload drop zone. */
 .drop-zone {
