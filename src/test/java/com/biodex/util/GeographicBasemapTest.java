@@ -2,7 +2,9 @@ package com.biodex.util;
 
 import com.biodex.controller.heatmap.HeatMapController;
 import com.biodex.dao.SightingDAO;
+import com.biodex.dao.SuburbDAO;
 import com.biodex.db.InMemoryDatabase;
+import com.biodex.model.Suburb;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -16,6 +18,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.TextField;
 import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.image.WritableImage;
 import javafx.scene.paint.Color;
@@ -60,6 +63,8 @@ class GeographicBasemapTest {
             });
             await(() -> basemap.isReady());
             fx(() -> {
+                assertFalse(basemap.navigateTo(Double.NaN, 153.0251));
+                assertFalse(basemap.navigateTo(-33.86, 151.21));
                 Point2D brisbane = basemap.project(-27.4698, 153.0251);
                 assertTrue(brisbane.getX() > 0 && brisbane.getX() < view.getWidth());
                 assertTrue(brisbane.getY() > 0 && brisbane.getY() < view.getHeight());
@@ -89,6 +94,7 @@ class GeographicBasemapTest {
             fx(() -> assertNotNull(basemap.project(-27.4698, 153.0251)));
             verifyFullHeatMapScreen();
             verifyEmptyScreenAndLoadRecovery();
+            verifyAreaSearchRecovery();
         } finally {
             fx(() -> { if (stage != null) stage.close(); });
             Platform.exit();
@@ -100,6 +106,8 @@ class GeographicBasemapTest {
             try (var sql = connection.createStatement()) {
                 sql.executeUpdate("INSERT INTO users (username,email,password_hash) VALUES ('map-test','map@example.test','test')");
                 sql.executeUpdate("INSERT INTO suburbs (name,postcode,latitude,longitude) VALUES ('Brisbane','4000',-27.4698,153.0251)");
+                sql.executeUpdate("INSERT INTO suburbs (name,postcode,latitude,longitude) VALUES ('Bardon','4065',-27.46,152.98), ('Rainworth','4065',-27.47,152.98)");
+                sql.executeUpdate("INSERT INTO suburbs (name,postcode,latitude,longitude) VALUES ('City Without Reports','4001',-27.4698,153.0251)");
                 sql.executeUpdate("INSERT INTO sightings (user_id,suburb_id,species_name,sighted_at) VALUES (1,1,'Cane Toad',date('now'))");
                 sql.executeUpdate("INSERT INTO sightings (user_id,suburb_id,species_name,sighted_at) VALUES (1,1,'Fire Ant',date('now')), (1,1,'Water Hyacinth',date('now')), (1,1,'Lantana',date('now','-10 days')), (1,1,'Lantana',date('now','-40 days'))");
             }
@@ -109,10 +117,17 @@ class GeographicBasemapTest {
                     assertFalse(Platform.isFxApplicationThread(), "Species lookup must run off the FX thread");
                     return super.findSpeciesForMap();
                 }
+            }, new SuburbDAO(connection) {
+                @Override
+                public List<Suburb> searchForMap(String query) {
+                    assertFalse(Platform.isFxApplicationThread(), "Area search must run off the FX thread");
+                    return super.searchForMap(query);
+                }
             });
             await(() -> view.getEngine().getLoadWorker().getState() == javafx.concurrent.Worker.State.SUCCEEDED
                     && stage.getScene().getRoot().lookup(".hotspot-marker") != null);
             verifySpeciesFiltering();
+            verifyAreaNavigation();
             fx(() -> {
                 Parent root = stage.getScene().getRoot();
                 root.applyCss();
@@ -145,19 +160,7 @@ class GeographicBasemapTest {
                     }())
                     """), "Tile coverage must fill the viewport instead of stopping at suburb validation bounds");
             });
-            if (Boolean.getBoolean("biodex.test.tiles")) {
-                await(() -> (Boolean) view.getEngine().executeScript("""
-                    (function () {
-                        var tiles = Array.from(document.querySelectorAll('.leaflet-tile'));
-                        return tiles.length > 0 && tiles.every(function (tile) {
-                            return tile.complete && tile.naturalWidth > 0;
-                        });
-                    }())
-                    """));
-                // WebView may report loaded images before its next paint reaches a snapshot.
-                // Wait for rendered coverage too, keeping the same blank-area threshold.
-                await(this::tilesHavePainted);
-            }
+            awaitLiveTiles();
             String snapshot = System.getProperty("biodex.test.snapshot");
             if (snapshot != null || Boolean.getBoolean("biodex.test.tiles")) {
                 fx(() -> {
@@ -180,18 +183,20 @@ class GeographicBasemapTest {
                     saveSnapshot(image, snapshot);
                 });
             }
+            searchArea("4065");
+            await(() -> areaResults().getItems().size() == 2 && !areaResults().isDisabled());
             verifyThemesAndResize(snapshot);
         }
     }
 
-    private void showHeatMap(SightingDAO dao) throws Exception {
+    private void showHeatMap(SightingDAO dao, SuburbDAO suburbDAO) throws Exception {
         fx(() -> {
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/biodex/fxml/heatmap/HeatMapView.fxml"));
                 loader.setControllerFactory(type -> {
                     try {
                         return type == HeatMapController.class
-                                ? new HeatMapController(dao) : type.getDeclaredConstructor().newInstance();
+                                ? new HeatMapController(dao, suburbDAO) : type.getDeclaredConstructor().newInstance();
                     } catch (ReflectiveOperationException exception) {
                         throw new IllegalStateException(exception);
                     }
@@ -240,6 +245,20 @@ class GeographicBasemapTest {
                 assertTrue(visibleCells.size() >= 5, "All fixture choices must be visible in the popup");
                 if (snapshot != null) saveSnapshot(popup.snapshot(null, null), snapshot + "." + theme + "-choices.png");
                 speciesFilter().hide();
+                areaResults().show();
+            });
+            fx(() -> {
+                Node popup = ((ComboBoxListViewSkin<?>) areaResults().getSkin()).getPopupContent();
+                popup.applyCss();
+                ((Parent) popup).layout();
+                Color expected = Color.web(theme.equals("dark") ? "#e9e6d8" : "#2e2b1f");
+                var cells = popup.lookupAll(".list-cell").stream()
+                        .filter(node -> node instanceof ListCell<?> cell && !cell.isEmpty())
+                        .map(node -> (ListCell<?>) node).toList();
+                assertEquals(2, cells.size());
+                cells.forEach(cell -> assertEquals(expected, cell.getTextFill(), "Area choices must follow the theme"));
+                if (snapshot != null) saveSnapshot(popup.snapshot(null, null), snapshot + "." + theme + "-areas.png");
+                areaResults().hide();
                 stage.setWidth(1050);
                 stage.setHeight(680);
             });
@@ -252,6 +271,11 @@ class GeographicBasemapTest {
                 assertMarkerAligned(root);
                 var filterBounds = speciesFilter().localToScene(speciesFilter().getBoundsInLocal());
                 assertTrue(filterBounds.getMaxX() <= stage.getScene().getWidth(), "Dropdown must fit after resizing");
+                var areaBounds = areaResults().localToScene(areaResults().getBoundsInLocal());
+                assertTrue(areaBounds.getMaxX() <= stage.getScene().getWidth(), "Area results must fit after resizing");
+                assertEquals("Choose a matching area", areaResults().getButtonCell().getText(),
+                        "Area prompt must survive layout and resizing");
+                assertTrue(view.getHeight() > 350, "Search controls must leave useful map space");
                 if (snapshot != null) saveSnapshot(root.snapshot(null, null), snapshot + "." + theme + "-resized.png");
                 stage.setWidth(1200);
                 stage.setHeight(790);
@@ -261,9 +285,197 @@ class GeographicBasemapTest {
         }
     }
 
+    /** Navigation keeps the existing sighting filters and overlays; areas without reports are searchable. */
+    private void verifyAreaNavigation() throws Exception {
+        fx(() -> {
+            speciesFilter().getSelectionModel().select(3); // Lantana
+            ((Button) stage.getScene().getRoot().lookup("#last30DaysButton")).fire();
+        });
+        awaitSummary("1 sighting -");
+        searchArea(" 4065 ");
+        await(() -> areaResults().getItems().size() == 2 && !areaResults().isDisabled());
+        fx(() -> {
+            assertEquals(List.of("Bardon, 4065", "Rainworth, 4065"),
+                    areaResults().getItems().stream().map(Object::toString).toList());
+            assertTrue(areaResults().lookupAll(".list-cell").stream()
+                            .anyMatch(node -> node instanceof ListCell<?> cell
+                                    && "Choose a matching area".equals(cell.getText())),
+                    "The unopened result picker must display its prompt");
+            Parent root = stage.getScene().getRoot();
+            Node marker = root.lookup(".hotspot-marker");
+            areaResults().getSelectionModel().selectFirst();
+            assertCoordinateAtCentre(-27.46, 152.98);
+            assertSame(marker, root.lookup(".hotspot-marker"), "Navigation must not rebuild/remove hotspots");
+            assertMarkerAligned(root);
+            assertEquals("Lantana", speciesFilter().getValue().toString());
+            assertTrue(root.lookup("#last30DaysButton").getStyleClass().contains("chip-selected"));
+            assertTrue(((Label) root.lookup("#summaryLabel")).getText().startsWith("1 sighting -"));
+            assertEquals("Bardon, 4065: No sightings match the current filters.", areaSearchStatus().getText());
+        });
+        awaitLiveTiles();
+        fx(() -> {
+            Parent root = stage.getScene().getRoot();
+            assertCoordinateAtCentre(-27.46, 152.98);
+            assertMarkerAligned(root);
+            String snapshot = System.getProperty("biodex.test.snapshot");
+            if (snapshot != null) saveSnapshot(root.snapshot(null, null), snapshot + ".navigation.png");
+            ((Button) root.lookup("#last7DaysButton")).fire();
+        });
+        awaitSummary("0 sightings");
+        fx(() -> assertCoordinateAtCentre(-27.46, 152.98));
+        searchArea("bRiS"); // Enter in the text field, as well as the Search button below.
+        await(() -> areaResults().getItems().size() == 1 && !areaResults().isDisabled());
+        fx(() -> {
+            areaResults().getSelectionModel().selectFirst();
+            assertCoordinateAtCentre(-27.4698, 153.0251);
+            assertTrue(areaSearchStatus().getText().contains("No sightings match"));
+            ((Button) stage.getScene().getRoot().lookup("#last30DaysButton")).fire();
+        });
+        awaitSummary("1 sighting -");
+        fx(() -> {
+            assertEquals("Brisbane, 4000: 1 sighting matches the current filters.", areaSearchStatus().getText());
+        });
+        searchArea("4001");
+        await(() -> areaResults().getItems().size() == 1 && !areaResults().isDisabled());
+        fx(() -> {
+            areaResults().getSelectionModel().selectFirst();
+            assertTrue(areaSearchStatus().getText().contains("No sightings match"),
+                    "Neighbouring areas sharing coordinates must not borrow each other's sightings");
+            ((Button) stage.getScene().getRoot().lookup("#resetMapButton")).fire();
+            assertTrue(areaResults().getItems().isEmpty());
+            assertTrue(areaSearchField().getText().isEmpty());
+            assertTrue(areaResults().isDisabled());
+            assertEquals("Lantana", speciesFilter().getValue().toString());
+            assertTrue(stage.getScene().getRoot().lookup("#last30DaysButton").getStyleClass().contains("chip-selected"));
+        });
+        searchArea("Nowhere");
+        await(() -> areaSearchStatus().getText().startsWith("No matching saved suburbs"));
+        fx(() -> {
+            assertTrue(areaResults().getItems().isEmpty());
+            assertTrue(areaResults().isDisabled());
+            areaSearchField().setText(" ");
+            ((Button) stage.getScene().getRoot().lookup("#areaSearchButton")).fire();
+            assertEquals("Enter a suburb name or a full postcode.", areaSearchStatus().getText());
+            ((Button) stage.getScene().getRoot().lookup("#clearFiltersButton")).fire();
+        });
+        awaitSummary("5 sightings");
+    }
+
+    private void verifyAreaSearchRecovery() throws Exception {
+        try (var connection = InMemoryDatabase.open()) {
+            try (var sql = connection.createStatement()) {
+                sql.executeUpdate("INSERT INTO suburbs (name,postcode,latitude,longitude) VALUES ('Brisbane','4000',-27.4698,153.0251), ('Bardon','4065',-27.46,152.98)");
+            }
+            var failSearch = new java.util.concurrent.atomic.AtomicBoolean(true);
+            CountDownLatch oldStarted = new CountDownLatch(1);
+            CountDownLatch releaseOld = new CountDownLatch(1);
+            CountDownLatch oldFinished = new CountDownLatch(1);
+            showHeatMap(new SightingDAO(connection), new SuburbDAO(connection) {
+                @Override
+                public List<Suburb> searchForMap(String query) {
+                    if (failSearch.get()) throw new IllegalStateException("Simulated area lookup failure");
+                    if (query.equals("slow")) {
+                        oldStarted.countDown();
+                        // Simulate a query that cannot be interrupted; its late result must stay discarded.
+                        boolean released = false;
+                        while (!released) {
+                            try {
+                                releaseOld.await();
+                                released = true;
+                            } catch (InterruptedException ignored) {
+                                // Continue until the test lets the old query finish.
+                            }
+                        }
+                        try {
+                            return super.searchForMap("4000");
+                        } finally {
+                            oldFinished.countDown();
+                        }
+                    }
+                    return super.searchForMap(query);
+                }
+            });
+            awaitSummary("0 sightings");
+            searchArea("4000");
+            await(() -> areaSearchStatus().getText().equals("Areas could not be loaded. Try Search again."));
+            fx(() -> {
+                assertTrue(areaResults().isDisabled());
+                assertFalse(speciesFilter().isDisabled(), "Search failure must not disable sighting filters");
+            });
+            failSearch.set(false);
+            searchArea("4000");
+            await(() -> areaResults().getItems().size() == 1 && !areaResults().isDisabled());
+            fx(() -> {
+                areaResults().getSelectionModel().selectFirst();
+                assertCoordinateAtCentre(-27.4698, 153.0251);
+                assertTrue(areaSearchStatus().getText().contains("No sightings match"));
+                assertTrue(stage.getScene().getRoot().lookup("#emptyStateLabel").isVisible());
+                ((Button) stage.getScene().getRoot().lookup("#retryMapButton")).fire();
+                assertTrue(areaResults().isDisabled(), "Navigation must wait for the reloaded map");
+            });
+            await(() -> !areaResults().isDisabled());
+            fx(() -> assertNull(areaResults().getValue(), "Retry must not leave a stale area selection"));
+            searchArea("slow");
+            try {
+                assertTrue(oldStarted.await(5, TimeUnit.SECONDS));
+                fx(() -> {
+                    areaSearchField().setText("4065");
+                    assertTrue(areaResults().getItems().isEmpty(), "Editing clears stale choices");
+                    assertTrue(areaResults().isDisabled());
+                    ((Button) stage.getScene().getRoot().lookup("#areaSearchButton")).fire();
+                });
+                await(() -> areaResults().getItems().size() == 1 && !areaResults().isDisabled());
+            } finally {
+                releaseOld.countDown();
+            }
+            assertTrue(oldFinished.await(5, TimeUnit.SECONDS));
+            fx(() -> assertEquals("Bardon, 4065", areaResults().getItems().get(0).toString(),
+                    "Late results from the cancelled search must not replace the new query"));
+        }
+    }
+
+    private void searchArea(String query) throws Exception {
+        fx(() -> {
+            areaSearchField().setText(query);
+            areaSearchField().fireEvent(new javafx.event.ActionEvent());
+        });
+    }
+
+    private void assertCoordinateAtCentre(double latitude, double longitude) {
+        JSObject point = (JSObject) view.getEngine().executeScript("biodexMap.project(" + latitude + "," + longitude + ")");
+        assertEquals(view.getWidth() / 2, ((Number) point.getMember("x")).doubleValue(), 1);
+        assertEquals(view.getHeight() / 2, ((Number) point.getMember("y")).doubleValue(), 1);
+    }
+
+    private TextField areaSearchField() {
+        return (TextField) stage.getScene().getRoot().lookup("#areaSearchField");
+    }
+
+    private ComboBox<?> areaResults() {
+        return (ComboBox<?>) stage.getScene().getRoot().lookup("#areaResults");
+    }
+
+    private Label areaSearchStatus() {
+        return (Label) stage.getScene().getRoot().lookup("#areaSearchStatusLabel");
+    }
+
     private void awaitViewportResize() throws Exception {
         await(() -> Math.abs(view.getWidth() - ((Number) view.getEngine()
                 .executeScript("document.getElementById('map').clientWidth")).doubleValue()) <= 1);
+    }
+
+    private void awaitLiveTiles() throws Exception {
+        if (!Boolean.getBoolean("biodex.test.tiles")) return;
+        await(() -> (Boolean) view.getEngine().executeScript("""
+            (function () {
+                var tiles = Array.from(document.querySelectorAll('.leaflet-tile'));
+                return tiles.length > 0 && tiles.every(function (tile) {
+                    return tile.complete && tile.naturalWidth > 0;
+                });
+            }())
+            """));
+        // Image loading can finish before WebView paints its next frame.
+        await(this::tilesHavePainted);
     }
 
     private boolean tilesHavePainted() {
@@ -288,7 +500,7 @@ class GeographicBasemapTest {
                     if (failLookup.get()) throw new IllegalStateException("Simulated database failure");
                     return super.findSpeciesForMap();
                 }
-            });
+            }, new SuburbDAO(connection));
             await(() -> ((Label) stage.getScene().getRoot().lookup("#summaryLabel"))
                     .getText().equals("Saved sightings could not be loaded"));
             fx(() -> {

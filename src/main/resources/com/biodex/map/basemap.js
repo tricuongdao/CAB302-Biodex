@@ -45,6 +45,9 @@ window.biodexMap = (function () {
         project: function (latitude, longitude) {
             return map.latLngToContainerPoint([latitude, longitude]);
         },
+        navigateTo: function (latitude, longitude) {
+            map.setView([latitude, longitude], 13, {animate: false});
+        },
         reset: function () { map.fitBounds(bounds, {padding: [24, 24], animate: false}); }
     };
 }());
