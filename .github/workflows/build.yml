@@ -1,0 +1,33 @@
+# Automated build server: compiles the project, runs the full test suite
+# and packages the application on every push to main and every pull request.
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    name: Compile, test and package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B -ntp clean verify
+
+      - name: Upload the application jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: biodex-application
+          path: target/biodex-*.jar
+          if-no-files-found: error
