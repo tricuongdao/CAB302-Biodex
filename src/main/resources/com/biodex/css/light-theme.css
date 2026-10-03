@@ -35,6 +35,31 @@
 /* Small uppercase label above a field. */
 .field-label { -fx-font-size: 10px; -fx-text-fill: #8b8571; }
 
+/* Standalone lists (uploaded photos etc.), matching the fields around them. */
+.list-view {
+    -fx-background-color: #fffdf6;
+    -fx-border-color: #d5ccb2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #2e2b1f;
+}
+.list-view .list-cell:filled:hover { -fx-background-color: #f1ead6; }
+.list-view .list-cell:filled:selected { -fx-background-color: #e4eadf; -fx-text-fill: #2e2b1f; }
+
+/* Dashed drop zone, e.g. the photo drop area. */
+.drop-zone {
+    -fx-background-color: #fffdf6;
+    -fx-border-color: #c9c0a6;
+    -fx-border-style: dashed;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 24;
+}
+
 /* Species dropdown on the heat map, including its popup list. */
 .heat-map-species-filter {
     -fx-background-color: #fffdf6;
@@ -73,6 +98,7 @@
     -fx-cursor: hand;
 }
 .button:hover { -fx-background-color: #55704a; }
+.button:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
 
 /* Secondary action, sits next to a primary one. */
 .outline-button {
