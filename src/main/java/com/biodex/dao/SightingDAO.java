@@ -9,7 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.TreeSet;
@@ -41,14 +41,19 @@ public class SightingDAO extends BaseDao {
              ORDER BY datetime(s.sighted_at) DESC, s.sighting_id DESC
             """;
 
-    /** Matches the shape SQLite writes for datetime('now'), so stored values stay comparable. */
+    /**
+     * Matches the shape SQLite writes for datetime('now', 'localtime'), so stored values stay
+     * comparable. Local time is deliberate: sighting dates are compared against the user's
+     * {@code LocalDate.now()}, and a UTC-stamped "now" would read as yesterday between midnight
+     * and the UTC offset each morning.
+     */
     private static final DateTimeFormatter SQLITE_TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
     private static final String INSERT_SIGHTING = """
             INSERT INTO sightings
                   (user_id, suburb_id, species_name, description, image_path, sighted_at)
-            VALUES (?, ?, ?, ?, ?, COALESCE(?, datetime('now')))
+            VALUES (?, ?, ?, ?, ?, COALESCE(?, datetime('now', 'localtime')))
             """;
 
     /** Uses the shared application connection. */

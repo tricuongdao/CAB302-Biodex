@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,9 +99,9 @@ public final class DataSeeder {
         }
     }
 
-    /** Matches the shape SQLite writes for datetime('now'), so stored values stay comparable. */
+    /** Matches the shape SQLite writes for datetime('now', 'localtime'), so stored values stay comparable. */
     private static final DateTimeFormatter SQLITE_TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /** Inserts Brisbane suburbs with coordinates, so plotted sightings land in the right place. */
     private static void seedSuburbsIfEmpty(Connection connection) throws SQLException {

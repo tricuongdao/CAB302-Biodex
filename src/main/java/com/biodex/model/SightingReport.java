@@ -1,6 +1,8 @@
 package com.biodex.model;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * Local user-submitted sighting report (per pest-detail-technical-spec.md).
@@ -45,8 +47,9 @@ public class SightingReport {
 
     /**
      * Parses the SQLite {@code reported_at} value. The column defaults to
-     * {@code datetime('now')}, which writes {@code yyyy-MM-dd HH:mm:ss}, so that
-     * shape is parsed as UTC; ISO-8601 instants keep working as well.
+     * {@code datetime('now', 'localtime')}, which writes {@code yyyy-MM-dd HH:mm:ss} in the
+     * machine's local zone, so that shape is parsed the same way; ISO-8601 instants keep
+     * working as well.
      */
     public void setReportedAt(String value) {
         if (value == null || value.isBlank()) {
@@ -58,8 +61,9 @@ public class SightingReport {
             this.reportedAt = Instant.parse(text);
             return;
         }
-        String normalised = text.replace(' ', 'T') + "Z";
-        this.reportedAt = Instant.parse(normalised);
+        this.reportedAt = LocalDateTime.parse(text.replace(' ', 'T'))
+                .atZone(ZoneId.systemDefault())
+                .toInstant();
     }
 
     public boolean isVerified() { return verified; }

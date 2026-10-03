@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +25,7 @@ public class SightingReportDAO extends BaseDao {
             SELECT suburb, COUNT(*) AS report_count
               FROM sighting_reports
              WHERE species_id = ?
-               AND reported_at >= datetime('now', ? || ' days')
+               AND reported_at >= datetime('now', 'localtime', ? || ' days')
              GROUP BY suburb
              ORDER BY report_count DESC
             """;
@@ -38,15 +38,18 @@ public class SightingReportDAO extends BaseDao {
              LIMIT ?
             """;
 
-    /** Matches the shape SQLite writes for CURRENT_TIMESTAMP, so stored values stay comparable. */
+    /**
+     * Matches the shape SQLite writes for datetime('now', 'localtime'), so stored values stay
+     * comparable with the local dates the UI works in.
+     */
     private static final DateTimeFormatter SQLITE_TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
     private static final String INSERT_REPORT = """
             INSERT INTO sighting_reports
                   (species_id, suburb, location_label, latitude, longitude, reporter_user_id, photo_path,
                    reported_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now', 'localtime')))
             """;
 
     /** Uses the shared application connection. */
