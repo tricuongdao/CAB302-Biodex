@@ -33,6 +33,25 @@
 /* Small uppercase label above a field. */
 .field-label { -fx-font-size: 10px; -fx-text-fill: #a29c87; }
 
+/* Species dropdown on the heat map, including its popup list. */
+.heat-map-species-filter {
+    -fx-background-color: #232720;
+    -fx-background-radius: 8;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 8;
+}
+.heat-map-species-filter:focused { -fx-border-color: #8fae7f; }
+.heat-map-species-filter .list-cell {
+    -fx-background-color: #232720;
+    -fx-text-fill: #e9e6d8;
+}
+.heat-map-species-filter .list-cell:filled:hover,
+.heat-map-species-filter .list-cell:filled:selected {
+    -fx-background-color: #3a4832;
+    -fx-text-fill: #e9e6d8;
+}
+.heat-map-species-filter .arrow { -fx-background-color: #a9c78f; }
+
 /* Panel that groups related controls. */
 .card {
     -fx-background-color: #232720;
@@ -208,18 +227,53 @@
 .success-label { -fx-text-fill: #a8c58d; -fx-font-size: 12px; }
 .field-error { -fx-border-color: #e89b83; }
 
-/* Hyperlinks - Light/Dark/Auto switcher and inline links. */
-.theme-link, .text-link {
+/* Theme switch and inline links. */
+.theme-label { -fx-text-fill: #a29c87; }
+.theme-toggle {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+.theme-toggle:hover { -fx-background-color: transparent; }
+.theme-toggle-track {
+    -fx-pref-width: 58;
+    -fx-min-width: 58;
+    -fx-max-width: 58;
+    -fx-pref-height: 30;
+    -fx-background-color: #32372e;
+    -fx-background-radius: 999;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-padding: 2 4 2 4;
+}
+.theme-toggle:selected .theme-toggle-track { -fx-background-color: #5a7a4c; -fx-border-color: #5a7a4c; }
+.theme-toggle:focused .theme-toggle-track { -fx-border-color: #8fae7f; }
+.theme-toggle-icons { -fx-spacing: 12; }
+.theme-toggle-sun, .theme-toggle-moon {
+    -fx-font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+    -fx-font-size: 15;
+    -fx-text-fill: #a9c78f;
+}
+.theme-toggle:selected .theme-toggle-sun,
+.theme-toggle:selected .theme-toggle-moon { -fx-text-fill: #e9e6d8; }
+.theme-toggle-knob {
+    -fx-fill: #e9e6d8;
+    -fx-stroke: #545b4b;
+    -fx-stroke-width: 0.8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.38), 4, 0.25, 0, 1);
+}
+.text-link {
     -fx-text-fill: #9dbb8b;
     -fx-underline: false;
     -fx-padding: 0;
 }
-.theme-link:visited, .text-link:visited,
-.theme-link:hover, .text-link:hover {
+.text-link:visited, .text-link:hover {
     -fx-text-fill: #9dbb8b;
 }
-.theme-link:hover, .text-link:hover { -fx-underline: true; }
-.theme-muted { -fx-text-fill: #a29c87; }
+.text-link:hover { -fx-underline: true; }
 
 /* --- Auth screens (no sidebar) --- */
 .auth-screen { -fx-background-color: #191c16; }
@@ -303,4 +357,19 @@
 /* Scroll panes sit flush on the page background. */
 .scroll-pane, .scroll-pane .viewport, .scroll-pane .content {
     -fx-background-color: transparent;
+}
+
+/* Google Sign-In button */
+.google-btn {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-color: #dadce0;
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-padding: 6 16 6 16;
+}
+.google-btn:hover {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #c6c6c6;
 }

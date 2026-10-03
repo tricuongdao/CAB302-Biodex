@@ -46,14 +46,7 @@
                     <Region styleClass="divider"/>
 
                     <Label text="APPEARANCE" styleClass="field-label"/>
-                    <HBox spacing="8">
-                        <Button fx:id="lightThemeButton" text="Light" styleClass="chip" mnemonicParsing="false"
-                            onAction="#onLightTheme"/>
-                        <Button fx:id="darkThemeButton" text="Dark" styleClass="chip" mnemonicParsing="false"
-                            onAction="#onDarkTheme"/>
-                        <Button fx:id="autoThemeButton" text="Auto" styleClass="chip" mnemonicParsing="false"
-                            onAction="#onAutoTheme"/>
-                    </HBox>
+                    <fx:include source="../common/ThemeSwitchView.fxml" fx:id="themeSwitch"/>
 
                     <Label text="REGION" styleClass="field-label"/>
                     <Label text="Brisbane QLD"/>
@@ -85,4 +78,3 @@
         </VBox>
     </center>
 </BorderPane>
-

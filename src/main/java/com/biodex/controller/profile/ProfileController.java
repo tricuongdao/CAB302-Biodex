@@ -2,6 +2,7 @@ package com.biodex.controller.profile;
 
 import com.biodex.controller.BaseController;
 import com.biodex.controller.common.SidebarController;
+import com.biodex.controller.common.ThemeSwitchController;
 import com.biodex.dao.DataAccessException;
 import com.biodex.dao.SettingsDAO;
 import com.biodex.dao.UserDAO;
@@ -10,7 +11,6 @@ import com.biodex.util.ThemeManager;
 import com.biodex.util.Validator;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 
@@ -22,6 +22,9 @@ public class ProfileController extends BaseController {
     /** Injected from the fx:include with fx:id="sidebar" in ProfileView.fxml. */
     @FXML
     private SidebarController sidebarController;
+
+    @FXML
+    private ThemeSwitchController themeSwitchController;
 
     @FXML
     private Label profileEmail;
@@ -45,15 +48,6 @@ public class ProfileController extends BaseController {
     private Label emailStatus;
 
     @FXML
-    private Button lightThemeButton;
-
-    @FXML
-    private Button darkThemeButton;
-
-    @FXML
-    private Button autoThemeButton;
-
-    @FXML
     private void initialize() {
         sidebarController.setActive("profile");
         if (currentUser() != null) {
@@ -66,7 +60,7 @@ public class ProfileController extends BaseController {
             ThemeManager.setCurrentTheme(new SettingsDAO().getSettingsForUser(
                     currentUser().getUserId()).getTheme());
         }
-        updateThemeButtons();
+        themeSwitchController.syncWithCurrentTheme();
     }
 
     @FXML
@@ -106,39 +100,6 @@ public class ProfileController extends BaseController {
         emailStatus.setText(message);
         emailStatus.getStyleClass().removeAll("error-label", "success-label");
         emailStatus.getStyleClass().add(error ? "error-label" : "success-label");
-    }
-
-    @FXML
-    private void onLightTheme() {
-        applyTheme(ThemeManager.LIGHT);
-    }
-
-    @FXML
-    private void onDarkTheme() {
-        applyTheme(ThemeManager.DARK);
-    }
-
-    @FXML
-    private void onAutoTheme() {
-        applyTheme(ThemeManager.LIGHT);
-    }
-
-    private void applyTheme(String theme) {
-        ThemeManager.setCurrentTheme(theme);
-        ThemeManager.apply(profileUsername.getScene(), theme);
-        if (currentUser() != null) {
-            new SettingsDAO().updateSetting(currentUser().getUserId(), SettingsDAO.SettingColumn.THEME,
-                    theme);
-        }
-        updateThemeButtons();
-    }
-
-    private void updateThemeButtons() {
-        lightThemeButton.getStyleClass().remove("chip-selected");
-        darkThemeButton.getStyleClass().remove("chip-selected");
-        autoThemeButton.getStyleClass().remove("chip-selected");
-        (ThemeManager.DARK.equals(ThemeManager.getCurrentTheme()) ? darkThemeButton : lightThemeButton)
-                .getStyleClass().add("chip-selected");
     }
 
     private static String initials(String username) {
