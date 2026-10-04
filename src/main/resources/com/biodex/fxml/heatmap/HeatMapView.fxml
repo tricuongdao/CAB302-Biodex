@@ -5,6 +5,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
@@ -48,9 +49,26 @@
                 <Region prefWidth="8"/>
                 <Label text="SPECIES" styleClass="field-label" labelFor="${speciesFilter}"/>
                 <ComboBox fx:id="speciesFilter" prefWidth="220" minWidth="160" maxWidth="220"
-                          styleClass="heat-map-species-filter" accessibleText="Filter sightings by species"
+                          styleClass="heat-map-choice" accessibleText="Filter sightings by species"
                           disable="true" onAction="#onSpeciesChanged"/>
             </HBox>
+
+            <VBox spacing="4">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="AREA" styleClass="field-label" labelFor="${areaSearchField}"/>
+                    <TextField fx:id="areaSearchField" promptText="Suburb or full postcode"
+                               accessibleText="Search saved suburbs by name or postcode"
+                               minWidth="120" prefWidth="260" maxWidth="320" HBox.hgrow="ALWAYS"
+                               onAction="#onSearchArea"/>
+                    <Button fx:id="areaSearchButton" text="Search" onAction="#onSearchArea" mnemonicParsing="false"/>
+                    <ComboBox fx:id="areaResults" promptText="Choose a matching area" visibleRowCount="6"
+                              accessibleText="Matching suburbs; select one to centre the map"
+                              minWidth="180" prefWidth="260" maxWidth="320" HBox.hgrow="ALWAYS"
+                              styleClass="heat-map-choice" disable="true" onAction="#onAreaSelected"/>
+                </HBox>
+                <Label fx:id="areaSearchStatusLabel" styleClass="muted" wrapText="true"
+                       text="Search saved suburbs; selecting an area moves the map."/>
+            </VBox>
 
             <HBox spacing="16" VBox.vgrow="ALWAYS">
                 <StackPane styleClass="map-canvas" HBox.hgrow="ALWAYS">
@@ -92,8 +110,8 @@
             </HBox>
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <Label fx:id="basemapStatusLabel" text="Loading map..." styleClass="muted" wrapText="true" HBox.hgrow="ALWAYS"/>
-                <Button text="Reset map" onAction="#onResetMap" mnemonicParsing="false"/>
-                <Button text="Retry map" onAction="#onRetryMap" mnemonicParsing="false"/>
+                <Button fx:id="resetMapButton" text="Reset map" onAction="#onResetMap" mnemonicParsing="false"/>
+                <Button fx:id="retryMapButton" text="Retry map" onAction="#onRetryMap" mnemonicParsing="false"/>
             </HBox>
         </VBox>
     </center>

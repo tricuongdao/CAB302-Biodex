@@ -62,6 +62,16 @@ public final class GeographicBasemap {
         }
     }
 
+    /** Moves the map to a saved suburb; invalid coordinates and an unloaded map leave it unchanged. */
+    public boolean navigateTo(double latitude, double longitude) {
+        if (!ready || BrisbaneMapProjection.project(latitude, longitude).isEmpty()) {
+            return false;
+        }
+        JSObject map = (JSObject) engine.executeScript("biodexMap");
+        map.call("navigateTo", latitude, longitude);
+        return true;
+    }
+
     public void reload() {
         ready = false;
         status.setText("Loading map...");

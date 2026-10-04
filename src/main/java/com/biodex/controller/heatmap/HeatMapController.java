@@ -3,7 +3,9 @@ package com.biodex.controller.heatmap;
 import com.biodex.controller.BaseController;
 import com.biodex.controller.common.SidebarController;
 import com.biodex.dao.SightingDAO;
+import com.biodex.dao.SuburbDAO;
 import com.biodex.model.MapSighting;
+import com.biodex.model.Suburb;
 import com.biodex.routing.Route;
 import com.biodex.util.BrisbaneMapProjection;
 import com.biodex.util.GeographicBasemap;
@@ -15,7 +17,9 @@ import javafx.geometry.Point2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -80,18 +84,32 @@ public class HeatMapController extends BaseController {
     @FXML
     private Label basemapStatusLabel;
 
+    @FXML
+    private TextField areaSearchField;
+
+    @FXML
+    private ComboBox<Suburb> areaResults;
+
+    @FXML
+    private Label areaSearchStatusLabel;
+
     private GeographicBasemap basemap;
     private final List<Runnable> markerLayouts = new ArrayList<>();
 
     private final SightingDAO sightingDAO;
+    private final SuburbDAO suburbDAO;
+    private Task<List<Suburb>> activeAreaSearch;
+    private List<MapSighting> displayedSightings = List.of();
+    private boolean sightingsAvailable;
 
     public HeatMapController() {
-        this(new SightingDAO());
+        this(new SightingDAO(), new SuburbDAO());
     }
 
     /** Allows full-screen integration checks with an isolated SQLite database. */
-    public HeatMapController(SightingDAO sightingDAO) {
+    public HeatMapController(SightingDAO sightingDAO, SuburbDAO suburbDAO) {
         this.sightingDAO = java.util.Objects.requireNonNull(sightingDAO);
+        this.suburbDAO = java.util.Objects.requireNonNull(suburbDAO);
     }
 
     private String selectedSpecies;
@@ -113,7 +131,20 @@ public class HeatMapController extends BaseController {
         hotspotLayer.setClip(clip);
         hotspotLayer.widthProperty().addListener(observable -> repositionMarkers());
         hotspotLayer.heightProperty().addListener(observable -> repositionMarkers());
-        basemap = new GeographicBasemap(basemapView, basemapStatusLabel, this::repositionMarkers);
+        // Retain the prompt when an unselected result picker is laid out or resized.
+        areaResults.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Suburb area, boolean empty) {
+                super.updateItem(area, empty);
+                setText(area == null ? areaResults.getPromptText() : area.toString());
+                setGraphic(null);
+            }
+        });
+        areaSearchField.textProperty().addListener((observable, previous, text) -> clearAreaSearch());
+        basemap = new GeographicBasemap(basemapView, basemapStatusLabel, () -> {
+            repositionMarkers();
+            updateAreaResultsAvailability();
+        });
         loadSightings();
     }
 
@@ -123,12 +154,105 @@ public class HeatMapController extends BaseController {
 
     @FXML
     private void onResetMap() {
+        clearAreaSearch();
+        areaSearchField.clear();
         basemap.reset();
     }
 
     @FXML
     private void onRetryMap() {
+        areaResults.getSelectionModel().clearSelection();
+        if (!areaResults.getItems().isEmpty()) {
+            areaSearchStatusLabel.setText("Choose an area once the map is ready.");
+        }
         basemap.reload();
+    }
+
+    /** Area search is independent of the sighting filters and never reloads or removes hotspots. */
+    @FXML
+    private void onSearchArea() {
+        clearAreaSearch();
+        String query = areaSearchField.getText();
+        if (query == null || query.isBlank()) {
+            areaSearchStatusLabel.setText("Enter a suburb name or a full postcode.");
+            return;
+        }
+        Task<List<Suburb>> task = new Task<>() {
+            @Override
+            protected List<Suburb> call() {
+                return suburbDAO.searchForMap(query);
+            }
+        };
+        activeAreaSearch = task;
+        areaSearchStatusLabel.setText("Searching saved suburbs...");
+        updateAreaResultsAvailability();
+        task.setOnSucceeded(event -> {
+            if (activeAreaSearch != task) return;
+            activeAreaSearch = null;
+            areaResults.getItems().setAll(task.getValue());
+            updateAreaResultsAvailability();
+            int count = areaResults.getItems().size();
+            areaSearchStatusLabel.setText(count == 0
+                    ? "No matching saved suburbs in Greater Brisbane."
+                    : count + " " + plural(count, "matching area", "matching areas") + ". Choose one to move the map.");
+        });
+        task.setOnFailed(event -> {
+            if (activeAreaSearch != task) return;
+            activeAreaSearch = null;
+            areaSearchStatusLabel.setText("Areas could not be loaded. Try Search again.");
+            updateAreaResultsAvailability();
+        });
+        Thread searcher = new Thread(task, "heat-map-area-search");
+        searcher.setDaemon(true);
+        searcher.start();
+    }
+
+    @FXML
+    private void onAreaSelected() {
+        Suburb area = areaResults.getValue();
+        if (area == null) return;
+        if (basemap.navigateTo(area.getLatitude(), area.getLongitude())) {
+            updateSelectedAreaFeedback();
+        } else {
+            areaSearchStatusLabel.setText("Map is not ready. Retry map, then choose the area again.");
+        }
+    }
+
+    private void clearAreaSearch() {
+        if (activeAreaSearch != null) {
+            activeAreaSearch.cancel();
+            activeAreaSearch = null;
+        }
+        areaResults.getItems().clear();
+        areaResults.getSelectionModel().clearSelection();
+        areaSearchStatusLabel.setText("Search saved suburbs; selecting an area moves the map.");
+        updateAreaResultsAvailability();
+    }
+
+    private void updateAreaResultsAvailability() {
+        areaResults.setDisable(basemap == null || !basemap.isReady()
+                || activeAreaSearch != null || areaResults.getItems().isEmpty());
+    }
+
+    private void updateSelectedAreaFeedback() {
+        Suburb area = areaResults.getValue();
+        if (area == null) return;
+        String message;
+        if (loadingIndicator.isVisible()) {
+            message = "Loading sightings...";
+        } else if (!sightingsAvailable) {
+            message = "Sightings could not be loaded.";
+        } else {
+            long count = displayedSightings.stream()
+                    .filter(sighting -> java.util.Objects.equals(sighting.getSuburbName(), area.getName())
+                            && java.util.Objects.equals(sighting.getPostcode(), area.getPostcode())
+                            && sighting.getLatitude() == area.getLatitude()
+                            && sighting.getLongitude() == area.getLongitude())
+                    .count();
+            message = count == 0 ? "No sightings match the current filters."
+                    : count + " " + (count == 1 ? "sighting matches" : "sightings match") + " the current filters.";
+        }
+        areaSearchStatusLabel.setText(area + ": " + message);
     }
 
     @FXML
@@ -226,6 +350,8 @@ public class HeatMapController extends BaseController {
     }
 
     private void renderSightings(List<MapSighting> sightings) {
+        displayedSightings = sightings;
+        sightingsAvailable = true;
         markerLayouts.clear();
         hotspotLayer.getChildren().clear();
         resetDetails();
@@ -253,6 +379,7 @@ public class HeatMapController extends BaseController {
         emptyStateLabel.setText(emptyMessage());
         emptyStateLabel.setVisible(empty);
         emptyStateLabel.setManaged(empty);
+        updateSelectedAreaFeedback();
     }
 
     private StackPane createMarker(HotspotKey key, List<MapSighting> sightings) {
@@ -316,9 +443,12 @@ public class HeatMapController extends BaseController {
             emptyStateLabel.setManaged(false);
             summaryLabel.setText("Loading saved sightings...");
         }
+        updateSelectedAreaFeedback();
     }
 
     private void showLoadError() {
+        displayedSightings = List.of();
+        sightingsAvailable = false;
         markerLayouts.clear();
         hotspotLayer.getChildren().clear();
         summaryLabel.setText("Saved sightings could not be loaded");
@@ -326,6 +456,7 @@ public class HeatMapController extends BaseController {
         emptyStateLabel.setVisible(true);
         emptyStateLabel.setManaged(true);
         resetDetails();
+        updateSelectedAreaFeedback();
     }
 
     private void resetDetails() {
