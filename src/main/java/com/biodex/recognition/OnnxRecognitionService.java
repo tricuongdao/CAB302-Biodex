@@ -24,7 +24,7 @@ import java.util.Scanner;
  * <p>The model and its labels live on the classpath at {@link #MODEL_RESOURCE} and
  * {@link #LABELS_RESOURCE}. {@code ServiceFactory} checks {@link #isModelAvailable()} first, so this
  * class is only constructed when the files are actually present; see
- * {@code Technical Specs/pest-recognition-integration.md} for how to train and export them.
+ * {@code docs/technical-specs/pest-recognition-integration.md} for how to train and export them.
  *
  * <p>Preprocessing matches what Teachable Machine's MobileNet training pipeline expects: the photo
  * is squeezed to a square {@value #INPUT_SIZE}&times;{@value #INPUT_SIZE} image and each channel
@@ -53,7 +53,7 @@ public final class OnnxRecognitionService implements RecognitionService {
         if (!isModelAvailable()) {
             throw new IllegalStateException(
                     "Pest classifier not found at " + MODEL_RESOURCE
-                            + " - see Technical Specs/pest-recognition-integration.md");
+                            + " - see docs/technical-specs/pest-recognition-integration.md");
         }
         try (InputStream model = OnnxRecognitionService.class.getResourceAsStream(MODEL_RESOURCE)) {
             environment = OrtEnvironment.getEnvironment();
