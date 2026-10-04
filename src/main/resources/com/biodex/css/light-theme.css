@@ -316,7 +316,7 @@
 }
 .auth-screen .button { -fx-pref-height: 40px; }
 .auth-screen .google-btn { -fx-pref-height: 44px; }
-.login-card {
+.auth-card {
     -fx-background-color: #fffdf6;
     -fx-background-radius: 16;
     -fx-border-color: #e6ddc6;
@@ -324,7 +324,7 @@
     -fx-padding: 40 44 44 44;
     -fx-effect: dropshadow(gaussian, rgba(58, 54, 40, 0.10), 28, 0, 0, 10);
 }
-.login-card .logo { -fx-font-size: 20px; -fx-text-fill: #3f5535; }
+.auth-card .logo { -fx-font-size: 20px; -fx-text-fill: #3f5535; }
 
 /* --- Shared sidebar --- */
 .sidebar { -fx-background-color: #44593a; }

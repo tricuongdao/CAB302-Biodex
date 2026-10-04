@@ -4,6 +4,7 @@ import com.biodex.controller.BaseController;
 import com.biodex.routing.Route;
 import com.biodex.service.AuthService;
 import com.biodex.service.SignupResult;
+import com.biodex.util.Entrance;
 import com.biodex.util.Validator;
 
 import javafx.concurrent.Task;
@@ -12,6 +13,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 public class SignupController extends BaseController {
 
@@ -22,8 +24,14 @@ public class SignupController extends BaseController {
     @FXML private PasswordField confirmPasswordField;
     @FXML private Label errorLabel;
     @FXML private Button createAccountButton;
+    @FXML private VBox formBox;
 
     private final AuthService authService = new AuthService();
+
+    @FXML
+    private void initialize() {
+        Entrance.play(formBox);
+    }
 
     /** Validates the form, creates the account through AuthService, then opens the sign-in screen. */
     @FXML

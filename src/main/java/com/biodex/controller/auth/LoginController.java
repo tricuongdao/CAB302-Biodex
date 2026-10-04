@@ -4,10 +4,8 @@ import com.biodex.controller.BaseController;
 import com.biodex.routing.Route;
 import com.biodex.service.AuthService;
 import com.biodex.service.LoginResult;
+import com.biodex.util.Entrance;
 
-import javafx.animation.FadeTransition;
-import javafx.animation.Interpolator;
-import javafx.animation.TranslateTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -15,7 +13,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
 public class LoginController extends BaseController {
 
@@ -30,33 +27,7 @@ public class LoginController extends BaseController {
 
     @FXML
     private void initialize() {
-        playEntrance();
-    }
-
-    /**
-     * A short fade-up when the screen opens: occasional screens can afford a little motion while
-     * everyday actions stay instant. Strong ease-out curve.
-     */
-    private void playEntrance() {
-        if (formBox == null) {
-            return;
-        }
-        Interpolator easeOut = Interpolator.SPLINE(0.23, 1, 0.32, 1);
-        formBox.setOpacity(0);
-        formBox.setTranslateY(14);
-
-        FadeTransition fade = new FadeTransition(Duration.millis(350), formBox);
-        fade.setFromValue(0);
-        fade.setToValue(1);
-        fade.setInterpolator(easeOut);
-
-        TranslateTransition rise = new TranslateTransition(Duration.millis(350), formBox);
-        rise.setFromY(14);
-        rise.setToY(0);
-        rise.setInterpolator(easeOut);
-
-        fade.play();
-        rise.play();
+        Entrance.play(formBox);
     }
 
     @FXML

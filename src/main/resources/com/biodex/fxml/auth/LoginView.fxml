@@ -20,7 +20,7 @@
            styleClass="auth-screen" prefWidth="1200" prefHeight="760">
 
     <!-- Sign-in card, centered both ways. -->
-    <VBox fx:id="formBox" styleClass="login-card" maxWidth="420" maxHeight="-Infinity" spacing="0">
+    <VBox fx:id="formBox" styleClass="auth-card" maxWidth="420" maxHeight="-Infinity" spacing="0">
         <VBox alignment="CENTER" spacing="6">
             <Label text="BIODEX" styleClass="logo"/>
             <Label text="Invasive Species Tracker" styleClass="muted"/>
