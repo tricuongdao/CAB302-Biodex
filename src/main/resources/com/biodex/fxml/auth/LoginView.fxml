@@ -19,31 +19,18 @@
       fx:controller="com.biodex.controller.auth.LoginController"
       styleClass="auth-screen" prefWidth="1200" prefHeight="760">
 
-    <!-- Brand panel: logo up top, the pitch and headline stats weighted to the bottom. -->
-    <VBox fx:id="brandPanel" styleClass="brand-panel" prefWidth="380" minWidth="380" spacing="0">
+    <!-- Brand panel: a quiet lockup, nothing else. -->
+    <VBox fx:id="brandPanel" styleClass="brand-panel" prefWidth="380" minWidth="380"
+          alignment="CENTER" spacing="0">
         <padding><Insets top="36" right="36" bottom="36" left="36"/></padding>
-        <Label text="BIODEX" styleClass="logo"/>
 
         <Region VBox.vgrow="ALWAYS"/>
 
-        <Label text="Log an invasive species sighting in the field, and see what everyone else has found nearby."
-               styleClass="brand-tagline" wrapText="true"/>
-        <Region prefHeight="30"/>
+        <Label text="BIODEX" styleClass="logo"/>
+        <Region prefHeight="10"/>
+        <Label text="Invasive Species Tracker" styleClass="brand-tagline"/>
 
-        <VBox spacing="4">
-            <Label text="1,224" styleClass="brand-stat-number"/>
-            <Label text="sightings logged, some as recent as an hour ago" styleClass="brand-stat-label" wrapText="true"/>
-        </VBox>
-        <Region prefHeight="18"/>
-        <VBox spacing="4">
-            <Label text="62" styleClass="brand-stat-number"/>
-            <Label text="species in the reference library" styleClass="brand-stat-label" wrapText="true"/>
-        </VBox>
-        <Region prefHeight="18"/>
-        <VBox spacing="4">
-            <Label text="South East QLD" styleClass="brand-stat-number"/>
-            <Label text="the region the library covers" styleClass="brand-stat-label" wrapText="true"/>
-        </VBox>
+        <Region VBox.vgrow="ALWAYS"/>
     </VBox>
 
     <!-- Sign-in form, optically centered between the theme switch and the bottom edge. -->

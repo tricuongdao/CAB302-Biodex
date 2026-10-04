@@ -320,9 +320,8 @@
     -fx-background-color: linear-gradient(to bottom right, #4d6542, #3f5535);
 }
 .brand-panel .logo { -fx-text-fill: #f6f1e6; }
+#brandPanel .logo { -fx-font-size: 22px; }
 .brand-tagline { -fx-text-fill: #cfd8b9; -fx-font-size: 13px; }
-.brand-stat-number { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #f6f1e6; }
-.brand-stat-label { -fx-text-fill: #b9c0a6; -fx-font-size: 12px; }
 
 /* --- Shared sidebar --- */
 .sidebar { -fx-background-color: #44593a; }
