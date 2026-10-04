@@ -1,6 +1,5 @@
 package com.biodex.api;
 
-import com.biodex.recognition.RecognitionService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;

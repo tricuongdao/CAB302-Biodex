@@ -116,11 +116,6 @@ public class SignupController extends BaseController {
         errorLabel.setManaged(true);
     }
 
-    private void hideError() {
-        errorLabel.setVisible(false);
-        errorLabel.setManaged(false);
-    }
-
     private static String textOf(TextField field) {
         return field.getText() == null ? "" : field.getText().trim();
     }

@@ -503,7 +503,6 @@ public final class DataSeeder {
         SpeciesBuilder sizeMaxMm(double v) { sizeMaxMm = v; return this; }
         SpeciesBuilder disposalGuidance(String v) { disposalGuidance = v; return this; }
         SpeciesBuilder alaGuid(String v) { alaGuid = v; return this; }
-        SpeciesBuilder photoPath(String v) { photoPath = v; return this; }
         SpeciesBuilder tags(List<String> v) { tags = v; return this; }
 
         Species build() {

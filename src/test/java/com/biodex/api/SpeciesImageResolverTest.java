@@ -61,6 +61,7 @@ class SpeciesImageResolverTest {
                 .imageForScientificName("Manorina melanocephala").get(5, TimeUnit.SECONDS);
 
         assertEquals("https://img/miner", url);
+        assertEquals(1, delegate.autocompleteCalls, "subgenus record should be found in one lookup");
     }
 
     @Test
