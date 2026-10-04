@@ -57,6 +57,6 @@ build.sh / build.bat          one-command build, test and package
 
 ## Team
 
-CAB302 team. See the pull requests for individual contributions: Vinny Dao, Ali Tehrani, Bernard, Dong Hyeon Uhm, Joshua, Tom, Yash Rao.
+CAB302 team. See the pull requests for individual contributions: Tri Cuong Dao, Ali Tehrani, Bernard, Dong Hyeon Uhm, Joshua, Yash Rao.
 
 Team workflow notes live in [CONTRIBUTING.md](CONTRIBUTING.md).
