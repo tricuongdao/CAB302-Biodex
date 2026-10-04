@@ -49,7 +49,7 @@
                         <Label text="Up to 5 photos, 10 MB each. Clear, side-on shots identify fastest."
                                styleClass="muted" wrapText="true" textAlignment="CENTER" maxWidth="280"/>
                         <Region prefHeight="6"/>
-                        <HBox spacing="10">
+                        <HBox alignment="CENTER" spacing="10">
                             <Button text="Browse files" onAction="#onBrowseFiles" mnemonicParsing="false"/>
                             <Button text="Use camera" styleClass="outline-button" mnemonicParsing="false"/>
                         </HBox>
