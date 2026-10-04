@@ -10,7 +10,6 @@ import javafx.animation.Interpolator;
 import javafx.animation.TranslateTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -25,7 +24,6 @@ public class LoginController extends BaseController {
     @FXML private Label errorLabel;
     @FXML private Button signInButton;
     @FXML private Button googleSignInButton;
-    @FXML private VBox brandPanel;
     @FXML private VBox formBox;
 
     private final AuthService authService = new AuthService();
@@ -37,34 +35,28 @@ public class LoginController extends BaseController {
 
     /**
      * A short fade-up when the screen opens: occasional screens can afford a little motion while
-     * everyday actions stay instant. Strong ease-out curve, 60ms between the two columns.
+     * everyday actions stay instant. Strong ease-out curve.
      */
     private void playEntrance() {
-        if (brandPanel == null || formBox == null) {
+        if (formBox == null) {
             return;
         }
         Interpolator easeOut = Interpolator.SPLINE(0.23, 1, 0.32, 1);
-        Node[] columns = {brandPanel, formBox};
-        for (int i = 0; i < columns.length; i++) {
-            Node column = columns[i];
-            column.setOpacity(0);
-            column.setTranslateY(14);
+        formBox.setOpacity(0);
+        formBox.setTranslateY(14);
 
-            FadeTransition fade = new FadeTransition(Duration.millis(350), column);
-            fade.setFromValue(0);
-            fade.setToValue(1);
-            fade.setDelay(Duration.millis(i * 60L));
-            fade.setInterpolator(easeOut);
+        FadeTransition fade = new FadeTransition(Duration.millis(350), formBox);
+        fade.setFromValue(0);
+        fade.setToValue(1);
+        fade.setInterpolator(easeOut);
 
-            TranslateTransition rise = new TranslateTransition(Duration.millis(350), column);
-            rise.setFromY(14);
-            rise.setToY(0);
-            rise.setDelay(Duration.millis(i * 60L));
-            rise.setInterpolator(easeOut);
+        TranslateTransition rise = new TranslateTransition(Duration.millis(350), formBox);
+        rise.setFromY(14);
+        rise.setToY(0);
+        rise.setInterpolator(easeOut);
 
-            fade.play();
-            rise.play();
-        }
+        fade.play();
+        rise.play();
     }
 
     @FXML

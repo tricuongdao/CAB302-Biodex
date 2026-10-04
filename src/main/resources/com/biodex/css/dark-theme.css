@@ -314,12 +314,15 @@
 }
 .auth-screen .button { -fx-pref-height: 40px; }
 .auth-screen .google-btn { -fx-pref-height: 44px; }
-.brand-panel {
-    -fx-background-color: linear-gradient(to bottom right, #4d6542, #3f5535);
+.login-card {
+    -fx-background-color: #232720;
+    -fx-background-radius: 16;
+    -fx-border-color: #3a4033;
+    -fx-border-radius: 16;
+    -fx-padding: 40 44 44 44;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 28, 0, 0, 10);
 }
-.brand-panel .logo { -fx-text-fill: #f6f1e6; }
-#brandPanel .logo { -fx-font-size: 22px; }
-.brand-tagline { -fx-text-fill: #cfd8b9; -fx-font-size: 13px; }
+.login-card .logo { -fx-font-size: 20px; -fx-text-fill: #c9d6b8; }
 
 /* --- Shared sidebar --- */
 .sidebar { -fx-background-color: #44593a; }
