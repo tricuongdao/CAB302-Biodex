@@ -4,6 +4,7 @@ import com.biodex.controller.BaseController;
 import com.biodex.routing.Route;
 import com.biodex.service.AuthService;
 import com.biodex.service.LoginResult;
+import com.biodex.util.Entrance;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -11,6 +12,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 public class LoginController extends BaseController {
 
@@ -18,8 +20,15 @@ public class LoginController extends BaseController {
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
     @FXML private Button signInButton;
+    @FXML private Button googleSignInButton;
+    @FXML private VBox formBox;
 
     private final AuthService authService = new AuthService();
+
+    @FXML
+    private void initialize() {
+        Entrance.play(formBox);
+    }
 
     @FXML
     private void onSignIn() {
@@ -61,6 +70,11 @@ public class LoginController extends BaseController {
     @FXML
     private void onForgotPassword() {
         router.go(Route.FORGOT_PASSWORD);
+    }
+
+    @FXML
+    private void onGoogleSignIn() {
+        // Button for cosmetics
     }
 
     private void handleResult(LoginResult result) {

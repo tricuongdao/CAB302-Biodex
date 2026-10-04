@@ -7,7 +7,7 @@
 | Module | Identify a Pest → photo recognition (`com.biodex.recognition`) |
 | Page Owner | Vinny |
 | Approach | Teachable Machine → ONNX → local inference via ONNX Runtime (offline, no API keys) |
-| Status | Implemented — model file pending |
+| Status | Implemented — 9-class model committed and verified |
 
 ---
 
@@ -78,12 +78,13 @@ on Vinny's machine, just run the last command with the flag set.
 
 3. Commit and run. `mvn javafx:run` → Identify a pest → Browse files or drag a photo in.
 
-### ⚠️ Single-class models are useless for confidence
+### ⚠️ Every replacement model must stay multi-class
 
-The current placeholder model was trained with **one class** (`Cane Toad`), whose head is
-`Dense(relu)` → `Dense(softmax)`. A softmax over one class is always 1.0, so the app will show
-"Cane Toad 100%" for every photo and the 0.70 low-confidence prompt can never trigger. Train with
-**at least two classes** (ideally the species set plus a `Not a pest` class) before demoing.
+A softmax over a single class is always 1.0, so a one-class model would show "100%" for every
+photo and the 0.70 low-confidence prompt could never trigger. The committed export is a **9-class**
+classifier whose output (shape `[-1, 9]`) matches the nine lines in `labels.txt`; train
+replacements with the full species set (plus a `Not a pest` class if you add one) and check the
+output count matches the labels before committing a new model.
 
 ### Model contract (verified against the current export)
 

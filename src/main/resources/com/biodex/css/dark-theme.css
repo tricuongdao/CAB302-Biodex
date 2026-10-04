@@ -33,6 +33,28 @@
 /* Small uppercase label above a field. */
 .field-label { -fx-font-size: 10px; -fx-text-fill: #a29c87; }
 
+/* Standalone lists (uploaded photos etc.), matching the fields around them. */
+.list-view {
+    -fx-background-color: #232720;
+    -fx-border-color: #3a4033;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+.list-view .list-cell { -fx-background-color: transparent; -fx-text-fill: #e9e6d8; }
+.list-view .list-cell:filled:hover { -fx-background-color: #2c3128; }
+.list-view .list-cell:filled:selected { -fx-background-color: #44593a; -fx-text-fill: #e9e6d8; }
+
+/* Dashed drop zone, e.g. the photo drop area. */
+.drop-zone {
+    -fx-background-color: #232720;
+    -fx-border-color: #4a5040;
+    -fx-border-style: dashed;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 24;
+}
+
 /* Heat-map dropdowns, including their popup lists. */
 .heat-map-choice {
     -fx-background-color: #232720;
@@ -59,6 +81,7 @@
     -fx-border-color: #3a4033;
     -fx-border-radius: 10;
     -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 14, 0, 0, 4);
 }
 
 /* Primary action. */
@@ -70,7 +93,12 @@
     -fx-padding: 8 18 8 18;
     -fx-cursor: hand;
 }
-.button:hover { -fx-background-color: #6b8c5b; }
+.button:hover {
+    -fx-background-color: #6b8c5b;
+    -fx-effect: dropshadow(gaussian, rgba(107, 140, 91, 0.35), 10, 0, 0, 3);
+}
+.button:pressed { -fx-scale-x: 0.98; -fx-scale-y: 0.98; }
+.button:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
 
 /* Secondary action, sits next to a primary one. */
 .outline-button {
@@ -84,6 +112,7 @@
     -fx-cursor: hand;
 }
 .outline-button:hover { -fx-background-color: #2c3128; }
+.outline-button:pressed { -fx-scale-x: 0.98; -fx-scale-y: 0.98; }
 
 /* Quiet text-only action, e.g. "Clear filters". */
 .ghost-button {
@@ -179,32 +208,121 @@
 }
 .text-field:focused, .password-field:focused, .text-area:focused {
     -fx-border-color: #8fae7f;
+    -fx-effect: dropshadow(gaussian, rgba(143, 174, 127, 0.20), 6, 0, 0, 0);
 }
+
+/* Combo boxes and the date picker mirror the text-field styling. */
+.combo-box, .date-picker {
+    -fx-background-color: #232720;
+    -fx-background-radius: 8;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 8;
+}
+.combo-box:focused, .date-picker:focused { -fx-border-color: #8fae7f; }
+.combo-box .text-field, .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #e9e6d8;
+    -fx-prompt-text-fill: #6e6a5a;
+    -fx-padding: 4 6 4 6;
+}
+.combo-box .text-field:focused, .date-picker .text-field:focused { -fx-border-color: transparent; }
+.combo-box .list-cell { -fx-text-fill: #e9e6d8; -fx-background-color: transparent; }
+.combo-box .arrow, .date-picker .arrow { -fx-background-color: #a29c87; }
+.combo-box .arrow-button, .date-picker .arrow-button { -fx-background-color: transparent; }
+.combo-box-popup .list-view {
+    -fx-background-color: #232720;
+    -fx-border-color: #4a5040;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.combo-box-popup .list-view .list-cell { -fx-background-color: #232720; -fx-text-fill: #e9e6d8; }
+.combo-box-popup .list-view .list-cell:filled:hover { -fx-background-color: #384231; }
+.combo-box-popup .list-view .list-cell:filled:selected { -fx-background-color: #44593a; }
+.date-picker-popup {
+    -fx-background-color: #232720;
+    -fx-border-color: #4a5040;
+}
+.date-picker-popup .month-year-pane { -fx-background-color: #2c322a; }
+.date-picker-popup .label { -fx-text-fill: #e9e6d8; }
+.date-picker-popup .day-cell { -fx-background-color: #232720; -fx-text-fill: #e9e6d8; }
+.date-picker-popup .previous-month,
+.date-picker-popup .next-month { -fx-background-color: #2a3027; -fx-text-fill: #8a9478; }
+.date-picker-popup .day-cell:hover { -fx-background-color: #384231; }
+.date-picker-popup .day-cell:selected { -fx-background-color: #44593a; }
+.date-picker-popup .day-cell:disabled { -fx-opacity: 0.35; }
 
 /* Reserved for the first feature sprint: field validation states. */
 .error-label { -fx-text-fill: #e89b83; -fx-font-size: 12px; }
 .success-label { -fx-text-fill: #a8c58d; -fx-font-size: 12px; }
 .field-error { -fx-border-color: #e89b83; }
 
-/* Hyperlinks - Light/Dark/Auto switcher and inline links. */
-.theme-link, .text-link {
+/* Theme switch and inline links. */
+.theme-label { -fx-text-fill: #a29c87; }
+.theme-toggle {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+.theme-toggle:hover { -fx-background-color: transparent; }
+.theme-toggle-track {
+    -fx-pref-width: 58;
+    -fx-min-width: 58;
+    -fx-max-width: 58;
+    -fx-pref-height: 30;
+    -fx-background-color: #32372e;
+    -fx-background-radius: 999;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-padding: 2 4 2 4;
+}
+.theme-toggle:selected .theme-toggle-track { -fx-background-color: #5a7a4c; -fx-border-color: #5a7a4c; }
+.theme-toggle:focused .theme-toggle-track { -fx-border-color: #8fae7f; }
+.theme-toggle-icons { -fx-spacing: 12; }
+.theme-toggle-sun, .theme-toggle-moon {
+    -fx-font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+    -fx-font-size: 15;
+    -fx-text-fill: #a9c78f;
+}
+.theme-toggle:selected .theme-toggle-sun,
+.theme-toggle:selected .theme-toggle-moon { -fx-text-fill: #e9e6d8; }
+.theme-toggle-knob {
+    -fx-fill: #e9e6d8;
+    -fx-stroke: #545b4b;
+    -fx-stroke-width: 0.8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.38), 4, 0.25, 0, 1);
+}
+.text-link {
     -fx-text-fill: #9dbb8b;
     -fx-underline: false;
     -fx-padding: 0;
 }
-.theme-link:visited, .text-link:visited,
-.theme-link:hover, .text-link:hover {
+.text-link:visited, .text-link:hover {
     -fx-text-fill: #9dbb8b;
 }
-.theme-link:hover, .text-link:hover { -fx-underline: true; }
-.theme-muted { -fx-text-fill: #a29c87; }
+.text-link:hover { -fx-underline: true; }
 
 /* --- Auth screens (no sidebar) --- */
 .auth-screen { -fx-background-color: #191c16; }
-.brand-panel { -fx-background-color: #44593a; }
-.brand-panel .logo { -fx-text-fill: #f6f1e6; }
-.brand-tagline { -fx-text-fill: #d9d4bd; -fx-font-size: 12px; }
-.brand-stat-number { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #f6f1e6; }
+.auth-screen .page-title { -fx-font-size: 26px; }
+.auth-screen .text-field, .auth-screen .password-field {
+    -fx-pref-height: 40px;
+    -fx-font-size: 13px;
+}
+.auth-screen .button { -fx-pref-height: 40px; }
+.auth-screen .google-btn { -fx-pref-height: 44px; }
+.auth-card {
+    -fx-background-color: #232720;
+    -fx-background-radius: 16;
+    -fx-border-color: #3a4033;
+    -fx-border-radius: 16;
+    -fx-padding: 40 44 44 44;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 28, 0, 0, 10);
+}
+.auth-card .logo { -fx-font-size: 20px; -fx-text-fill: #c9d6b8; }
 
 /* --- Shared sidebar --- */
 .sidebar { -fx-background-color: #44593a; }
@@ -221,7 +339,14 @@
     -fx-font-size: 13px;
 }
 .sidebar-link:hover { -fx-background-color: #55704a; }
-.sidebar-link-active { -fx-background-color: #5a7350; -fx-text-fill: #ffffff; }
+.sidebar-link-active {
+    -fx-background-color: #5a7350;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #f6f1e6;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 8;
+    -fx-padding: 7 12 7 9;
+}
 .sidebar-muted { -fx-text-fill: #b9c0a6; -fx-font-size: 11px; }
 .avatar { -fx-background-color: #2f4429; -fx-background-radius: 999; -fx-alignment: center; }
 .avatar-initials { -fx-text-fill: #f6f1e6; -fx-font-weight: bold; -fx-font-size: 12px; }
@@ -258,7 +383,10 @@
 .divider { -fx-background-color: #3a4033; -fx-pref-height: 1; }
 .pest-photo { -fx-background-color: #2c3128; -fx-background-radius: 8; }
 .clickable { -fx-cursor: hand; }
-.clickable:hover { -fx-border-color: #8fae7f; }
+.clickable:hover {
+    -fx-border-color: #8fae7f;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0, 0, 8);
+}
 
 /* Photo upload drop zone. */
 .drop-zone {
@@ -282,3 +410,31 @@
 .scroll-pane, .scroll-pane .viewport, .scroll-pane .content {
     -fx-background-color: transparent;
 }
+
+/* Google Sign-In button - a light pill would glare on the dark theme, so it uses the
+   cream surface instead of pure white. */
+.google-btn {
+    -fx-background-color: #f6f1e6;
+    -fx-background-radius: 20;
+    -fx-border-color: #d5ccb2;
+    -fx-border-radius: 20;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-padding: 6 16 6 16;
+}
+.google-btn:hover {
+    -fx-background-color: #efe9d8;
+    -fx-border-color: #c9c0a6;
+}
+.google-btn:pressed { -fx-scale-x: 0.985; -fx-scale-y: 0.985; }
+
+/* Checkboxes read as dark controls rather than default white squares. */
+.check-box { -fx-text-fill: #e9e6d8; }
+.check-box > .box {
+    -fx-background-color: #232720;
+    -fx-border-color: #4a5040;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.check-box:selected > .box { -fx-background-color: #44593a; -fx-border-color: #5d7a4e; }
+.check-box:selected > .box > .mark { -fx-background-color: #f6f1e6; }

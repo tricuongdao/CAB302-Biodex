@@ -1,5 +1,6 @@
 package com.biodex;
 
+import com.biodex.db.DataSeeder;
 import com.biodex.db.DatabaseConnection;
 import com.biodex.db.SchemaInitialiser;
 import com.biodex.routing.Route;
@@ -13,6 +14,8 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) {
         SchemaInitialiser.initialise();
+        // Fills any empty demo tables (species, suburbs, sample sightings) on first launch.
+        DataSeeder.seedIfEmpty(DatabaseConnection.getInstance().getConnection());
 
         SceneRouter router = SceneRouter.getInstance();
         router.init(stage);

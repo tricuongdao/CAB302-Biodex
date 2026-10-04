@@ -1,3 +1,22 @@
+# Biodex - Invasive Species Tracker
+
+[![Build](https://github.com/tricuongdao/CAB302-Biodex/actions/workflows/build.yml/badge.svg)](https://github.com/tricuongdao/CAB302-Biodex/actions/workflows/build.yml)
+
+Desktop application for tracking invasive species sightings: pest photo recognition, a sighting heat map, species details backed by the Atlas of Living Australia, and local sighting records.
+
+**Build and run** (JDK 17 or newer; Maven is not required, the bundled wrapper downloads it on first use):
+
+| Task | Windows | macOS / Linux |
+|---|---|---|
+| Build: clean compile, full test suite, package the jar | `build.bat` | `./build.sh` |
+| Run the app | `loader\run.bat` | `loader/run.sh` |
+
+The build script writes the application jar to `target/biodex-1.0-SNAPSHOT.jar`.
+
+**Automated build server:** every push to `main` and every pull request runs [`.github/workflows/build.yml`](.github/workflows/build.yml) on GitHub Actions, which compiles the project, runs the full test suite and uploads the application jar as a build artifact. The badge above shows the latest status.
+
+---
+
 # Sign Up / Login Page  Specification
 
 ## Document Control

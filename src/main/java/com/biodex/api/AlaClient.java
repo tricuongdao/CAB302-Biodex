@@ -140,6 +140,7 @@ public class AlaClient {
             JsonObject root = getJson(path, Map.of());
 
             JsonObject taxonConcept = object(root, "taxonConcept");
+            JsonObject classification = object(root, "classification");
             String scientificName = string(taxonConcept, "nameString", "nameComplete", "scientificName");
             String commonName = firstCommonName(root);
             String description = description(root);
@@ -176,10 +177,14 @@ public class AlaClient {
                     finalDescription,
                     finalImage,
                     invasive,
-                    string(taxonConcept, "family"),
-                    string(taxonConcept, "order", "orderName"),
-                    string(taxonConcept, "class", "className"),
-                    string(taxonConcept, "kingdom"),
+                    firstNonNull(string(taxonConcept, "family"),
+                            string(classification, "family")),
+                    firstNonNull(string(taxonConcept, "order", "orderName"),
+                            string(classification, "order")),
+                    firstNonNull(string(taxonConcept, "class", "className"),
+                            string(classification, "class")),
+                    firstNonNull(string(taxonConcept, "kingdom"),
+                            string(classification, "kingdom")),
                     conservationStatus(root),
                     categoryTags(root, invasive),
                     null, null, null, null, Map.of());

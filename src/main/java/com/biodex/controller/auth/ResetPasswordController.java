@@ -4,6 +4,7 @@ import com.biodex.controller.BaseController;
 import com.biodex.dao.UserDAO;
 import com.biodex.routing.Route;
 import com.biodex.session.PasswordResetSession;
+import com.biodex.util.Entrance;
 import com.biodex.util.PasswordHasher;
 import com.biodex.util.Validator;
 
@@ -13,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.layout.VBox;
 
 /**
  * Handles the final password reset stage.
@@ -34,12 +36,17 @@ public class ResetPasswordController extends BaseController {
     @FXML
     private ProgressIndicator progressIndicator;
 
+    @FXML
+    private VBox formBox;
+
     private final UserDAO userDAO = new UserDAO();
     private final PasswordResetSession resetSession =
             PasswordResetSession.getInstance();
 
     @FXML
     private void initialize() {
+        Entrance.play(formBox);
+
         if (!hasVerifiedReset()) {
             showError("Verify a password reset code before changing your password.");
             setFormDisabled(true);

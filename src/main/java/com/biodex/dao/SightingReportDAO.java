@@ -6,6 +6,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +25,7 @@ public class SightingReportDAO extends BaseDao {
             SELECT suburb, COUNT(*) AS report_count
               FROM sighting_reports
              WHERE species_id = ?
-               AND reported_at >= datetime('now', ? || ' days')
+               AND reported_at >= datetime('now', 'localtime', ? || ' days')
              GROUP BY suburb
              ORDER BY report_count DESC
             """;
@@ -36,10 +38,18 @@ public class SightingReportDAO extends BaseDao {
              LIMIT ?
             """;
 
+    /**
+     * Matches the shape SQLite writes for datetime('now', 'localtime'), so stored values stay
+     * comparable with the local dates the UI works in.
+     */
+    private static final DateTimeFormatter SQLITE_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
+
     private static final String INSERT_REPORT = """
             INSERT INTO sighting_reports
-                  (species_id, suburb, location_label, latitude, longitude, reporter_user_id, photo_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                  (species_id, suburb, location_label, latitude, longitude, reporter_user_id, photo_path,
+                   reported_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now', 'localtime')))
             """;
 
     /** Uses the shared application connection. */
@@ -94,7 +104,10 @@ public class SightingReportDAO extends BaseDao {
         return getRecentReports(speciesId, DEFAULT_RECENT_LIMIT);
     }
 
-    /** Inserts a new sighting report. Returns the generated report_id. */
+    /**
+     * Inserts a new sighting report. Returns the generated report_id.
+     * {@code reported_at} defaults to the current time unless the report carries its own.
+     */
     public int insertReport(SightingReport report) {
         return insertReturningKey(INSERT_REPORT,
                 stmt -> {
@@ -117,6 +130,9 @@ public class SightingReportDAO extends BaseDao {
                         stmt.setNull(6, Types.INTEGER);
                     }
                     stmt.setString(7, report.getPhotoPath());
+                    stmt.setString(8, report.getReportedAt() == null
+                            ? null
+                            : SQLITE_TIMESTAMP.format(report.getReportedAt()));
                 });
     }
 

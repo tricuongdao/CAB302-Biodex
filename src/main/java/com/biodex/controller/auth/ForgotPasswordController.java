@@ -5,6 +5,7 @@ import com.biodex.dao.UserDAO;
 import com.biodex.model.User;
 import com.biodex.routing.Route;
 import com.biodex.session.PasswordResetSession;
+import com.biodex.util.Entrance;
 import com.biodex.util.Validator;
 
 import javafx.concurrent.Task;
@@ -13,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 /**
  * Starts password recovery flow. (no email is sent, uses 111111 as a fixed recovery code)
@@ -31,9 +33,17 @@ public class ForgotPasswordController extends BaseController {
     @FXML
     private ProgressIndicator progressIndicator;
 
+    @FXML
+    private VBox formBox;
+
     private final UserDAO userDAO = new UserDAO();
     private final PasswordResetSession resetSession =
             PasswordResetSession.getInstance();
+
+    @FXML
+    private void initialize() {
+        Entrance.play(formBox);
+    }
 
     @FXML
     private void onSendCode() {

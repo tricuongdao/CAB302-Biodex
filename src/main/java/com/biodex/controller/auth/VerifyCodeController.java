@@ -3,11 +3,13 @@ package com.biodex.controller.auth;
 import com.biodex.controller.BaseController;
 import com.biodex.routing.Route;
 import com.biodex.session.PasswordResetSession;
+import com.biodex.util.Entrance;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 /**
  * Handles verification of fixed password recovery code.
@@ -28,11 +30,16 @@ public class VerifyCodeController extends BaseController {
     @FXML
     private Button verifyButton;
 
+    @FXML
+    private VBox formBox;
+
     private final PasswordResetSession resetSession =
             PasswordResetSession.getInstance();
 
     @FXML
     private void initialize() {
+        Entrance.play(formBox);
+
         String email = resetSession.getEmail();
 
         if (email == null || resetSession.getUserId() <= 0) {

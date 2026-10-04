@@ -28,6 +28,10 @@ public class UploadController extends BaseController {
     private static final long  MAX_FILE_SIZE = 10 * 1024 * 1024;
     private static final int MAX_FILES = 5;
 
+    /** Why the most recent validation failed, so the caller can show it. */
+    private String lastErrorTitle;
+    private String lastErrorMessage;
+
     @FXML
     public void initialize() {
 
@@ -37,6 +41,10 @@ public class UploadController extends BaseController {
     @FXML
     private ListView<String> uploadList;
     private void updateUploadList() {
+        if (uploadList == null) {
+            // The list only exists once the view is loaded; validation still works without it.
+            return;
+        }
         uploadList.getItems().clear();
         for (File file : selectedImages) {
             uploadList.getItems().add(file.getName());
@@ -56,24 +64,33 @@ public class UploadController extends BaseController {
 
         if (files != null) {
             for (File file : files) {
-                uploadValidation(file);
+                if (!uploadValidation(file)) {
+                    showError(lastErrorTitle, lastErrorMessage);
+                }
             }
-
         }
-
     }
 
+    /**
+     * Validates one picked file, adding it to {@link #selectedImages} when it passes. Returns
+     * false for a file that cannot be taken and records why in {@link #lastErrorTitle} /
+     * {@link #lastErrorMessage}; the caller shows that message. Kept free of UI calls so the
+     * rules stay unit testable.
+     */
     public boolean uploadValidation(File file) {
         if (file.length() > MAX_FILE_SIZE) {
-            showError("File exceed size", "Max size of 10MB.");
+            lastErrorTitle = "File exceed size";
+            lastErrorMessage = "Max size of 10MB.";
             return false;
         }
         if (selectedImages.contains(file)) {
-            showError("Already Selected", file.getName() + "already added");
+            lastErrorTitle = "Already Selected";
+            lastErrorMessage = file.getName() + "already added";
             return false;
         }
         if (selectedImages.size() >= MAX_FILES) {
-            showError("Max  file selected.", " Max of 5 allowed");
+            lastErrorTitle = "Max  file selected.";
+            lastErrorMessage = " Max of 5 allowed";
             return false;
         }
         selectedImages.add(file);
@@ -81,6 +98,7 @@ public class UploadController extends BaseController {
         return true;
     }
 
+    /** Shows the validation message; only called from the button handler, where a UI exists. */
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);

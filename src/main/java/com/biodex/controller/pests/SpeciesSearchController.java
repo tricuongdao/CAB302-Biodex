@@ -21,6 +21,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
@@ -186,6 +187,10 @@ public class SpeciesSearchController extends BaseController {
         Region photo = new Region();
         photo.setPrefHeight(90);
         photo.getStyleClass().add("pest-photo");
+        Label noPhoto = new Label("No photo yet");
+        noPhoto.getStyleClass().add("muted");
+        StackPane photoBox = new StackPane(photo, noPhoto);
+        photoBox.setPrefHeight(90);
         if (species.getImageUrl() != null) {
             applyPhoto(photo, species.getImageUrl());
         }
@@ -201,7 +206,7 @@ public class SpeciesSearchController extends BaseController {
         scientific.getStyleClass().addAll("muted", "sci-name");
         scientific.setWrapText(true);
 
-        card.getChildren().addAll(photo, name, scientific);
+        card.getChildren().addAll(photoBox, name, scientific);
         card.setOnMouseClicked(event -> openSpecies(species));
         return card;
     }
@@ -216,6 +221,10 @@ public class SpeciesSearchController extends BaseController {
         Region photo = new Region();
         photo.setPrefHeight(90);
         photo.getStyleClass().add("pest-photo");
+        Label noPhoto = new Label("No photo yet");
+        noPhoto.getStyleClass().add("muted");
+        StackPane photoBox = new StackPane(photo, noPhoto);
+        photoBox.setPrefHeight(90);
         if (species.getPhotoPath() != null && !species.getPhotoPath().isBlank()) {
             applyPhoto(photo, species.getPhotoPath());
         }
@@ -231,7 +240,7 @@ public class SpeciesSearchController extends BaseController {
         scientific.getStyleClass().addAll("muted", "sci-name");
         scientific.setWrapText(true);
 
-        card.getChildren().addAll(photo, name, scientific);
+        card.getChildren().addAll(photoBox, name, scientific);
         // Wrap local species in a SpeciesSummary for navigation
         card.setOnMouseClicked(event -> openSpecies(toSummary(species)));
         return card;
@@ -334,7 +343,7 @@ public class SpeciesSearchController extends BaseController {
         return key;
     }
 
-    /** Paints an image onto a card photo region, replacing the plain placeholder background. */
+    /** Paints an image onto a card photo region and hides its "No photo yet" placeholder. */
     private static void applyPhoto(Region photo, String url) {
         if (url == null || url.isBlank()) {
             return;
@@ -342,6 +351,14 @@ public class SpeciesSearchController extends BaseController {
         String escaped = url.replace("'", "%27");
         photo.setStyle("-fx-background-size: cover; -fx-background-position: center;"
                 + " -fx-background-image: url('" + escaped + "');");
+        if (photo.getParent() instanceof StackPane box) {
+            for (javafx.scene.Node node : box.getChildren()) {
+                if (node instanceof Label placeholder) {
+                    placeholder.setVisible(false);
+                    placeholder.setManaged(false);
+                }
+            }
+        }
     }
 
     private void openSpecies(SpeciesSummary species) {
