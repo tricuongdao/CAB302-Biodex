@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.biodex.controller.legal.TermsPrivacyController"
+            styleClass="auth-screen"
+            prefWidth="1200"
+            prefHeight="760">
+
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="12">
+            <padding>
+                <Insets top="18" right="24" bottom="12" left="24"/>
+            </padding>
+
+            <Button text="Back to sign up"
+                    styleClass="outline-button"
+                    onAction="#onBackToSignup"/>
+
+            <Label text="BIODEX" styleClass="logo"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <fx:include source="../common/ThemeSwitchView.fxml"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true"
+                    hbarPolicy="NEVER"
+                    pannable="true">
+
+            <content>
+                <StackPane>
+                    <padding>
+                        <Insets top="12" right="32" bottom="32" left="32"/>
+                    </padding>
+
+                    <VBox styleClass="card"
+                          maxWidth="860"
+                          spacing="14">
+
+                        <Label text="Terms, Privacy and Data"
+                               styleClass="page-title"/>
+
+                        <Label text="Last updated: October 2026"
+                               styleClass="muted"/>
+
+                        <Region prefHeight="4"/>
+
+                        <Label text="1. Overview"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="This application is designed to help users identify, report and view sightings of invasive species within the Greater Brisbane area."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="By using the application, users agree to use it responsibly and to provide accurate information where possible."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="This application has been developed as an educational software project and is not an official service of Brisbane City Council, the Queensland Government, Biosecurity Queensland or any wildlife management organisation."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Information provided by Biodex should not replace professional biosecurity, wildlife, medical or emergency advice."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="2. Information We Collect"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Depending on the features used, Biodex may store:"/>
+
+                        <VBox spacing="4">
+                            <padding>
+                                <Insets left="20"/>
+                            </padding>
+
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• A username and email address"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• A securely hashed account password"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Application preferences such as the selected theme"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• The species included in a sighting report"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• The date and approximate location of a sighting"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Descriptions, notes and other information entered in a report"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Local file paths for selected images"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• The verification status of submitted sightings"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Cached species information obtained from external data services"/>
+                        </VBox>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Users should not submit unnecessary personal or sensitive information in usernames, sighting descriptions, notes or photographs."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="This application does not require payment information, government identification numbers or health information."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="3. How Information Is Used"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Submitted information may be used to:"/>
+
+                        <VBox spacing="4">
+                            <padding>
+                                <Insets left="20"/>
+                            </padding>
+
+                            <Label text="• Create and authenticate local user accounts"/>
+                            <Label text="• Display invasive-species sightings on the map"/>
+                            <Label text="• Calculate and display pest-density information"/>
+                            <Label text="• Provide information about species reported in particular areas"/>
+                            <Label text="• Connect sightings to the user who submitted them"/>
+                            <Label text="• Identify duplicate, inaccurate or inappropriate reports"/>
+                            <Label text="• Remember application settings"/>
+                            <Label text="• Support the general functionality of the application"/>
+                        </VBox>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Biodex does not sell user information or use it for advertising."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="4. Location Data"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Location information submitted through the application is used to identify where an invasive species has been sighted."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Users should only provide the location of the sighting and should avoid submitting information that could unnecessarily identify a private residence or individual."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Locations outside the supported Greater Brisbane area may be rejected by the application."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="5. Data Storage"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Biodex stores application data locally in an SQLite database on the device running the application. The current prototype does not use a central Biodex server."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Selected photographs are processed locally by the pest-recognition model. The current recognition feature does not send photographs to an external image-recognition service. The application may store a local path referring to a selected photograph."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Species information received from external services may be cached in the local database so it can be reused."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Because the database and photographs are stored on the user's computer, anyone with access to that computer or its files may be able to access locally stored information. Users are responsible for protecting access to their device."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="No security system can guarantee complete protection against data loss or unauthorised access."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="6. Third-Party Services"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Biodex uses information or software provided by:"/>
+
+                        <VBox spacing="4">
+                            <padding>
+                                <Insets left="20"/>
+                            </padding>
+
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• The Atlas of Living Australia for species and occurrence information"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Wikipedia for selected species summaries"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• OpenStreetMap contributors for map data and map tiles"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Leaflet for displaying the interactive map"/>
+                        </VBox>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="When Atlas of Living Australia, Wikipedia or OpenStreetMap features are used, requests are sent to the relevant service. These requests may include normal technical information such as the device's internet address, the requested page or map tile, and the date and time of the request."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Biodex does not intentionally send account passwords or password hashes to these services."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Third-party services operate under their own terms, privacy policies and availability conditions. Some requests may be processed or stored outside Australia."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="OpenStreetMap data is provided under the Open Database Licence and must remain attributed to OpenStreetMap and its contributors. Atlas of Living Australia and Wikipedia content remains subject to the relevant source licence and attribution requirements."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="The inclusion of a third-party service does not mean that the provider endorses Biodex."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="7. Automated Identification and Data Accuracy"
+                               styleClass="section-title"/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Biodex uses a locally operated image-recognition model to suggest possible species matches."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Recognition results are estimates and may be incomplete or incorrect. Users should confirm a result using reliable information before handling, removing or reporting an animal or plant."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Species descriptions, sightings, map information and third-party data may also contain errors or become outdated."/>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Users should not approach or handle potentially dangerous wildlife based only on information displayed by Biodex. Serious or urgent biosecurity concerns should be reported through an appropriate official authority."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Label text="8. Responsible Use"
+                               styleClass="section-title"/>
+
+                        <Label text="Users must not knowingly:"/>
+
+                        <VBox spacing="4">
+                            <padding>
+                                <Insets left="20"/>
+                            </padding>
+
+                            <Label text="• Submit false or misleading sightings"/>
+                            <Label text="• Impersonate another person"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Include unnecessary personal information about another person"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Upload unlawful, offensive or unrelated material"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Attempt to interfere with the application or its database"/>
+                            <Label maxWidth="Infinity" wrapText="true"
+                                   text="• Represent Biodex reports as officially verified government records"/>
+                        </VBox>
+
+                        <Label maxWidth="Infinity"
+                               wrapText="true"
+                               text="Biodex is provided for educational and demonstration purposes."/>
+
+                        <Region prefHeight="8"/>
+
+                        <Button text="Back to sign up"
+                                maxWidth="Infinity"
+                                onAction="#onBackToSignup"/>
+                    </VBox>
+                </StackPane>
+            </content>
+        </ScrollPane>
+    </center>
+</BorderPane>

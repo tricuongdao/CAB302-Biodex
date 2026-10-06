@@ -12,12 +12,19 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<!-- Create account: a single centered card on the page, matching the sign-in screen. -->
-<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.biodex.controller.auth.SignupController"
-           styleClass="auth-screen" prefWidth="1200" prefHeight="760">
+           styleClass="auth-screen"
+           prefWidth="1200"
+           prefHeight="760">
 
-    <VBox fx:id="formBox" styleClass="auth-card" maxWidth="420" maxHeight="-Infinity" spacing="0">
+    <VBox fx:id="formBox"
+          styleClass="auth-card"
+          maxWidth="420"
+          maxHeight="-Infinity"
+          spacing="0">
+
         <VBox alignment="CENTER" spacing="6">
             <Label text="BIODEX" styleClass="logo"/>
             <Label text="Invasive Species Tracker" styleClass="muted"/>
@@ -27,7 +34,8 @@
 
         <VBox alignment="CENTER" spacing="6">
             <Label text="Create your account" styleClass="page-title"/>
-            <Label text="One account for everything you find." styleClass="muted"/>
+            <Label text="One account for everything you find."
+                   styleClass="muted"/>
         </VBox>
 
         <Region prefHeight="28"/>
@@ -37,35 +45,44 @@
                 <Label text="DISPLAY NAME" styleClass="field-label"/>
                 <TextField fx:id="displayNameField" promptText="Alex"/>
             </VBox>
+
             <VBox spacing="6" HBox.hgrow="ALWAYS">
                 <Label text="USERNAME" styleClass="field-label"/>
                 <TextField fx:id="usernameField" promptText="alexc"/>
             </VBox>
         </HBox>
+
         <Region prefHeight="16"/>
 
         <VBox spacing="6">
             <Label text="EMAIL" styleClass="field-label"/>
             <TextField fx:id="emailField" promptText="you@example.com"/>
         </VBox>
+
         <Region prefHeight="16"/>
 
         <HBox spacing="12">
             <VBox spacing="6" HBox.hgrow="ALWAYS">
                 <Label text="PASSWORD" styleClass="field-label"/>
-                <PasswordField fx:id="passwordField" promptText="********"/>
+                <PasswordField fx:id="passwordField"
+                               promptText="********"/>
             </VBox>
+
             <VBox spacing="6" HBox.hgrow="ALWAYS">
                 <Label text="CONFIRM PASSWORD" styleClass="field-label"/>
-                <PasswordField fx:id="confirmPasswordField" promptText="********"/>
+                <PasswordField fx:id="confirmPasswordField"
+                               promptText="********"/>
             </VBox>
         </HBox>
 
-        <Label fx:id="errorLabel" styleClass="error-label" visible="false" managed="false" wrapText="true"/>
+        <Label fx:id="errorLabel"
+               styleClass="error-label"
+               visible="false"
+               managed="false"
+               wrapText="true"/>
 
         <Region prefHeight="12"/>
 
-        <!-- Live password checklist. -->
         <HBox spacing="8">
             <Label text="8+ characters" styleClass="check-pill"/>
             <Label text="a number" styleClass="check-pill"/>
@@ -74,23 +91,47 @@
 
         <Region prefHeight="12"/>
 
-        <CheckBox text="My photos can appear on the closed map with my username" wrapText="true"/>
+        <CheckBox text="My photos can appear on the closed map with my username"
+                  wrapText="true"/>
+
+        <Region prefHeight="12"/>
+
+        <VBox spacing="4">
+            <CheckBox fx:id="termsCheckBox"
+                      text="I agree to the Terms of Use and acknowledge the Privacy Notice."
+                      wrapText="true"/>
+
+            <Hyperlink text="Read Terms, Privacy and Data"
+                       styleClass="text-link"
+                       onAction="#onViewTerms"/>
+        </VBox>
 
         <Region prefHeight="18"/>
 
-        <Button fx:id="createAccountButton" text="Create account" maxWidth="Infinity" onAction="#onCreateAccount"/>
+        <Button fx:id="createAccountButton"
+                text="Create account"
+                maxWidth="Infinity"
+                onAction="#onCreateAccount"/>
 
         <Region prefHeight="10"/>
 
         <HBox alignment="CENTER">
-            <Hyperlink text="Already registered? Sign in" styleClass="text-link" onAction="#onBackToLogin"/>
+            <Hyperlink text="Already registered? Sign in"
+                       styleClass="text-link"
+                       onAction="#onBackToLogin"/>
         </HBox>
     </VBox>
 
-    <!-- Theme switch floats in the top-right corner, off the card. -->
-    <HBox alignment="CENTER" maxWidth="-Infinity" maxHeight="-Infinity" spacing="8"
+    <HBox alignment="CENTER"
+          maxWidth="-Infinity"
+          maxHeight="-Infinity"
+          spacing="8"
           StackPane.alignment="TOP_RIGHT">
-        <padding><Insets top="18" right="24"/></padding>
+
+        <padding>
+            <Insets top="18" right="24"/>
+        </padding>
+
         <fx:include source="../common/ThemeSwitchView.fxml"/>
     </HBox>
 </StackPane>

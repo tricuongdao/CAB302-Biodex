@@ -16,6 +16,7 @@ public enum Route {
 
     LOGIN("/com/biodex/fxml/auth/LoginView.fxml", "Biodex - Sign in"),
     SIGNUP("/com/biodex/fxml/auth/SignupView.fxml", "Biodex - Create account"),
+    TERMS_PRIVACY("/com/biodex/fxml/legal/TermsPrivacyView.fxml", "Biodex - Terms, Privacy and Data"),
     FORGOT_PASSWORD("/com/biodex/fxml/auth/ForgotPasswordView.fxml", "Biodex - Account recovery"),
     VERIFY_CODE("/com/biodex/fxml/auth/VerifyCodeView.fxml", "Biodex - Verify code"),
     RESET_PASSWORD("/com/biodex/fxml/auth/ResetPasswordView.fxml", "Biodex - Reset password"),
